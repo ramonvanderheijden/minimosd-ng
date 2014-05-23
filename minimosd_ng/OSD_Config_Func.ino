@@ -8,58 +8,55 @@
 #define ISd(panel,whichBit) getBit(panD_REG[panel], whichBit)
 #define ISe(panel,whichBit) getBit(panE_REG[panel], whichBit)
 
-boolean getBit(byte Reg, byte whichBit) {
-    boolean State;
-    State = Reg & (1 << whichBit);
-    return State;
+#define getBit(r, b) (r & (1 << b))
+/*boolean getBit(byte reg, byte b)
+{
+  return reg & (1 << b);
+}*/
+
+byte setBit(byte &r, byte b, boolean s)
+{
+  if (s)
+    r |= 1 << b;
+  else
+    r &= ~(1 << b);
+  return r;
 }
 
-byte setBit(byte &Reg, byte whichBit, boolean stat) {
-    if (stat) {
-        Reg = Reg | (1 << whichBit);
-    } 
-    else {
-        Reg = Reg & ~(1 << whichBit);
-    }
-    return Reg;
+byte readEEPROM(int address)
+{
+  return EEPROM.read(address);
 }
 
-// EEPROM reader/writers
-// Utilities for writing and reading from the EEPROM
-byte readEEPROM(int address) {
-
-    return EEPROM.read(address);
-}
-
-void writeEEPROM(byte value, int address) {
-    EEPROM.write(address, value);
+void writeEEPROM(byte value, int address)
+{
+  EEPROM.write(address, value);
 }
 
 #ifdef FORCEINIT
+void InitializeOSD()
+{
+//  delay(500);
 
-void InitializeOSD() {
-
-//    delay(500);
-
-    writeEEPROM(42, CHK1);
-    writeEEPROM(VER-42,CHK2);
-    for(panel = 0; panel < npanels; panel++) writeSettings();
+  writeEEPROM(42, CHK1);
+  writeEEPROM(VER-42,CHK2);
+  for(panel = 0; panel < npanels; panel++)
+    writeSettings();
 
 #ifdef MINOMOSD_COPTER
-    osd.setPanel(4,9);
-    osd.openPanel();
-    osd.printf_P(PSTR("OSD Initialized, reboot")); 
-    osd.closePanel();
+  osd.setPanel(4,9);
+  osd.openPanel();
+  osd.printf_P(PSTR("OSD Initialized, reboot")); 
+  osd.closePanel();
 #endif
-
-    // run for ever so user resets 
-    for(;;) {}
-
+  // run for ever so user resets 
+  for(;;) {}
 }
 #endif
 
 // Write our latest FACTORY settings to EEPROM
-void writeSettings() {
+void writeSettings()
+{
     // Writing all default parameters to EEPROM, ON = panel enabled  
     // All panels have 3 values:
     //  - Enable/Disable
@@ -186,34 +183,37 @@ void writeSettings() {
     writeEEPROM(6,ch_toggle_ADDR);
 
 }
-void readSettings() {
-    overspeed = EEPROM.read(overspeed_ADDR);
-    stall = EEPROM.read(stall_ADDR);
-    battv = EEPROM.read(battv_ADDR);
-    switch_mode = EEPROM.read(switch_mode_ADDR);
-    panel_auto_switch = EEPROM.read(AUTO_SCREEN_SWITC_ADD);
-//    if (EEPROM.read(ch_toggle_ADDR) < 4 || EEPROM.read(ch_toggle_ADDR) > 8){
-//     	EEPROM.write(ch_toggle_ADDR, 5);
-//	}
-    ch_toggle = EEPROM.read(ch_toggle_ADDR);
-    //  battp = EEPROM.read(battp_ADDR);
-    rssical = EEPROM.read(OSD_RSSI_HIGH_ADDR);
-    rssipersent = EEPROM.read(OSD_RSSI_LOW_ADDR);
-    rssiraw_on = EEPROM.read(OSD_RSSI_RAW_ADDR);
 
-    batt_warn_level = EEPROM.read(OSD_BATT_WARN_ADDR);
-    rssi_warn_level = EEPROM.read(OSD_RSSI_WARN_ADDR);
-    int i;
-    for(i=0;i < OSD_CALL_SIGN_TOTAL;i++) 
-    {
-        char_call[i] = EEPROM.read(OSD_CALL_SIGN_ADDR + i);
-        if(char_call[i] == 0) break;
-    }
-    char_call[i+1] ='\0'; //null terminate the string 
+void readSettings()
+{
+  int i;
+
+  overspeed = EEPROM.read(overspeed_ADDR);
+  stall = EEPROM.read(stall_ADDR);
+  battv = EEPROM.read(battv_ADDR);
+  switch_mode = EEPROM.read(switch_mode_ADDR);
+  panel_auto_switch = EEPROM.read(AUTO_SCREEN_SWITC_ADD);
+//  if (EEPROM.read(ch_toggle_ADDR) < 4 || EEPROM.read(ch_toggle_ADDR) > 8){
+//    EEPROM.write(ch_toggle_ADDR, 5);
+//  }
+  ch_toggle = EEPROM.read(ch_toggle_ADDR);
+  //battp = EEPROM.read(battp_ADDR);
+  rssical = EEPROM.read(OSD_RSSI_HIGH_ADDR);
+  rssipersent = EEPROM.read(OSD_RSSI_LOW_ADDR);
+  rssiraw_on = EEPROM.read(OSD_RSSI_RAW_ADDR);
+
+  batt_warn_level = EEPROM.read(OSD_BATT_WARN_ADDR);
+  rssi_warn_level = EEPROM.read(OSD_RSSI_WARN_ADDR);
+  for(i = 0; i < OSD_CALL_SIGN_TOTAL; i++) {
+    char_call[i] = EEPROM.read(OSD_CALL_SIGN_ADDR + i);
+    if(char_call[i] == 0)
+      break;
+  }
+  char_call[i+1] ='\0'; //null terminate the string 
 }
 
-void readPanelSettings() {
-
+void readPanelSettings()
+{
     //****** First set of 8 Panels ******
     uint16_t offset = OffsetBITpanel * panel;
 
@@ -372,24 +372,26 @@ void readPanelSettings() {
     panDistance_XY[1][panel] = checkPAL(readEEPROM(panDistance_y_ADDR + offset));
 }
 
-int checkPAL(int line){
-    if(line >= osd.getCenter() && osd.getMode() == 0){
-        line -= 3;//Cutting lines offset after center if NTSC
-    }
-    return line;
+int checkPAL(int line)
+{
+  if(line >= osd.getCenter() && osd.getMode() == 0){
+    line -= 3;//Cutting lines offset after center if NTSC
+  }
+  return line;
 }
 
-void updateSettings(byte panelu, byte panel_x, byte panel_y, byte panel_s ) {
-    if(panel >= 1 && panel <= 32) {
-
-        writeEEPROM(panel_s, (6 * panelu) - 6 + 0);
-        if(panel_s != 0) {
-            writeEEPROM(panel_x, (6 * panelu) - 6 + 2);
-            writeEEPROM(panel_y, (6 * panelu) - 6 + 4);
-        }
-        osd.clear();
-        readSettings();
-        for(panel = 0; panel < npanels; panel++) readPanelSettings();
-    } 
+void updateSettings(byte panelu, byte panel_x, byte panel_y, byte panel_s )
+{
+  if(panel >= 1 && panel <= 32) {
+    writeEEPROM(panel_s, (6 * panelu) - 6 + 0);
+    if(panel_s != 0) {
+      writeEEPROM(panel_x, (6 * panelu) - 6 + 2);
+      writeEEPROM(panel_y, (6 * panelu) - 6 + 4);
+    }
+    osd.clear();
+    readSettings();
+    for(panel = 0; panel < npanels; panel++)
+      readPanelSettings();
+  } 
 }
 
