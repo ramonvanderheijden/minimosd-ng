@@ -1,0 +1,4 @@
+minimosd-ng
+===========
+
+MinimOSD firmware
