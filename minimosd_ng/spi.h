@@ -1,5 +1,5 @@
-#ifndef Spi_h
-#define Spi_h
+#ifndef spi_h
+#define spi_h
 
 // Get the common arduino functions
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -11,7 +11,7 @@
 #define SCK_PIN   13
 #define MISO_PIN  12
 #define MOSI_PIN  11
-#define SS_PIN    10  // <------- !!! (Remember! This pin will select USB host chip Max3421)
+#define SS_PIN    6
 
 class SPI
 {

@@ -1,10 +1,11 @@
 // Get the common arduino functions
 #if defined(ARDUINO) && ARDUINO >= 100
-	#include "Arduino.h"
+#include "Arduino.h"
 #else
-	#include "wiring.h"
+#include "wiring.h"
 #endif
-#include "Spi.h"
+
+#include "spi.h"
 
 //---------- constructor ----------------------------------------------------
 
@@ -14,7 +15,7 @@ SPI::SPI()
   pinMode(SCK_PIN, OUTPUT);
   pinMode(MOSI_PIN, OUTPUT);
   pinMode(MISO_PIN, INPUT);
-  pinMode(SS_PIN, OUTPUT); // <------- !!! (Remember! This pin will select USB host chip Max3421)
+  pinMode(SS_PIN, OUTPUT);
 
   // enable SPI Master, MSB, SPI mode 0, FOSC/4
   mode(0);
@@ -54,3 +55,4 @@ byte SPI::transfer(byte value, byte period)
 //---------- preinstantiate SPI object --------------------------------------
 
 SPI Spi = SPI();
+

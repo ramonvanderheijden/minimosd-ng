@@ -1,15 +1,17 @@
 
 #include <FastSerial.h>
 
-#include "max7456.h"
 // Get the common arduino functions
 #if defined(ARDUINO) && ARDUINO >= 100
-	#include "Arduino.h"
+#include "Arduino.h"
 #else
-	#include "wiring.h"
+#include "wiring.h"
 #endif
-#include "Spi.h"
+
 #include <EEPROM.h>
+
+#include "max7456.h"
+#include "spi.h"
 #include "OSD_Config.h"
 
 volatile int16_t x;
