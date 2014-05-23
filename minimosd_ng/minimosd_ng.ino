@@ -148,8 +148,6 @@ void setup()
 
   /* set panel to 0 to start in the first navigation screen */
   panel = 0;
-  /* Show bootloader bar */
-  //loadBar();
   delay(2000);
   Serial.flush(); 
   // Startup MAVLink timers  

@@ -35,10 +35,10 @@ void writeEEPROM(byte value, int address) {
     EEPROM.write(address, value);
 }
 
+#ifdef FORCEINIT
 
 void InitializeOSD() {
 
-//    loadBar();
 //    delay(500);
 
     writeEEPROM(42, CHK1);
@@ -56,6 +56,7 @@ void InitializeOSD() {
     for(;;) {}
 
 }
+#endif
 
 // Write our latest FACTORY settings to EEPROM
 void writeSettings() {
