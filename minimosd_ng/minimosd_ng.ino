@@ -145,7 +145,7 @@ void setup()
   if(readEEPROM(CHK1) + readEEPROM(CHK2) != VER) {
     osd.setPanel(6,9);
     osd.openPanel();
-    osd.printf_P(PSTR("Missing/Old Config")); 
+    osd.printf_P(PSTR("Missing/Old Config"));
     osd.closePanel();
     InitializeOSD();
   }

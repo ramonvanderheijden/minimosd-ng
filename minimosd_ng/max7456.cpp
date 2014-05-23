@@ -29,10 +29,10 @@ void OSD::init()
   pinMode(MAX7456_SELECT,OUTPUT);
   pinMode(MAX7456_VSYNC, INPUT);
   digitalWrite(MAX7456_VSYNC,HIGH); //enabling pull-up resistor
+  digitalWrite(MAX7456_SELECT,LOW);
 
   detectMode();
 
-  digitalWrite(MAX7456_SELECT,LOW);
   //read black level register
   Spi.transfer(MAX7456_OSDBL_reg_read);//black level read register
   byte osdbl_r = Spi.transfer(0xff);
@@ -54,33 +54,22 @@ void OSD::init()
 
 void OSD::detectMode()
 {
-  //read STAT and auto detect Mode PAL/NTSC
-  digitalWrite(MAX7456_SELECT,LOW);
-  Spi.transfer(MAX7456_STAT_reg_read);//status register
-  byte osdstat_r = Spi.transfer(0xff);
+  uint8_t osdstat_r;
+  
+  // read STAT and auto detect Mode PAL/NTSC
+  Spi.transfer(MAX7456_STAT_reg_read);
+  osdstat_r = Spi.transfer(0xff);
 
-  if ((B00000001 & osdstat_r) == 1){ //PAL
-      setMode(1);  
-  }
-  else if((B00000010 & osdstat_r) == 1){ //NTSC
-      setMode(0);
-  }
-  //If no signal was detected so it uses EEPROM config
-  else{
-      if (EEPROM.read(PAL_NTSC_ADDR) == 0){ //NTSC
-          setMode(0);
-      } 
-      else { //PAL
-          setMode(1);
-      }
-      digitalWrite(MAX7456_SELECT,LOW);
+  if (osdstat_r & 0x3) {
+    setMode(osdstat_r & 0x01);
+  } else {
+    setMode(EEPROM.read(PAL_NTSC_ADDR) & 0x01);
   }
 }
 
 //------------------ Set Brightness  ---------------------------------
 void OSD::setBrightness()
 {
-
     uint8_t blevel = EEPROM.read(OSD_BRIGHTNESS_ADDR);
 
     if(blevel == 0) //low brightness
