@@ -12,7 +12,7 @@
 #define MAX7456_MODE_MASK_PAL 0x40 //PAL mask 01000000
 #define MAX7456_CENTER_PAL 0x8
 
-#define MAX7456_MODE_MASK_NTCS 0x00 //NTSC mask 00000000 ("|" will do nothing)
+#define MAX7456_MODE_MASK_NTSC 0x00 //NTSC mask 00000000 ("|" will do nothing)
 #define MAX7456_CENTER_NTSC 0x6
 
 //MAX7456 reg read addresses
@@ -78,11 +78,11 @@ class OSD: public BetterStream
     void closePanel(void);
     void control(uint8_t ctrl);
     void detectMode(void);
-    void setMode(int mode);
+    void setMode(uint8_t mode);
     void setBrightness();
     void openSingle(uint8_t x, uint8_t y);
-    int getMode(void);
-    int getCenter(void);
+    uint8_t getMode(void);
+    uint8_t getCenter(void);
     virtual int     available(void);
     virtual int     read(void);
     virtual int     peek(void);

@@ -11,10 +11,10 @@ void panLogo(){
     osd.setPanel(5, 5);
     osd.openPanel();
 #ifdef MINIMOSD_PLANE
-    osd.printf_P(PSTR("MinimOSD-Extra 2.4|Plane r780"));
+    osd.printf_P(PSTR("MinimOSD-ng - Plane"));
 #endif
 #ifdef MINIMOSD_COPTER
-    osd.printf_P(PSTR("MinimOSD-Extra 2.4|Copter r791"));
+    osd.printf_P(PSTR("MinimOSD-ng - Copter"));
 #endif
     osd.closePanel();
 }
@@ -520,19 +520,19 @@ void panOff(){
       //Switch mode by value
       if (switch_mode == 0){
         //First panel
-        if (ch_raw < 1233 && panel != 0) {
+        if (ch_raw < 1300 && panel != 0) {
           osd_clear = 1;
           //osd.clear();
           panel = 0;
         }
         //Second panel
-        else if (ch_raw >= 1233 && ch_raw <= 1467 && panel != 1) { //second panel
+        else if ((ch_raw < 1700) && (panel != 1)) { //second panel
           osd_clear = 1;
           //osd.clear();
           panel = 1;
         }
         //Panel off
-        else if (ch_raw > 1467 && panel != npanels) {
+        else if (panel != npanels) {
           osd_clear = 1;
           //osd.clear();
           panel = npanels; //off panel

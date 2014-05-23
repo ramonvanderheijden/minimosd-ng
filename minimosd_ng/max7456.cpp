@@ -93,38 +93,27 @@ void OSD::setBrightness()
 
 //------------------ Set Mode (PAL/NTSC) ------------------------------------
 
-void OSD::setMode(int themode)
+void OSD::setMode(uint8_t mode)
 {
-  switch(themode){
-    case 0:
-      video_mode = MAX7456_MODE_MASK_NTCS;
-      video_center = MAX7456_CENTER_NTSC;
-      break;
-    case 1:
-      video_mode = MAX7456_MODE_MASK_PAL;
-      video_center = MAX7456_CENTER_PAL;
-      break;
+  if (mode == NTSC) {
+    video_mode = MAX7456_MODE_MASK_NTSC;
+    video_center = MAX7456_CENTER_NTSC;
+  } else {
+    video_mode = MAX7456_MODE_MASK_PAL;
+    video_center = MAX7456_CENTER_PAL;
   }
 }
 
 //------------------ Get Mode (PAL 0/NTSC 1) --------------------------------
 
-int OSD::getMode()
+uint8_t OSD::getMode()
 {
-  switch(video_mode){
-    case MAX7456_MODE_MASK_NTCS:
-      return 0;
-      break;
-    case MAX7456_MODE_MASK_PAL:
-      return 1;
-      break;
-  }
-  return 0;
+  return (video_mode == MAX7456_MODE_MASK_NTSC) ? 0 : 1;
 }
 
 //------------------ Get Center (PAL/NTSC) ----------------------------------
 
-int OSD::getCenter()
+uint8_t OSD::getCenter()
 {
   return video_center; //first line for center panel
 }
@@ -149,8 +138,8 @@ void OSD::clear()
 
 //------------------ set panel -----------------------------------------------
 
-void
-OSD::setPanel(uint8_t st_col, uint8_t st_row){
+void OSD::setPanel(uint8_t st_col, uint8_t st_row)
+{
   start_col = st_col;
   start_row = st_row;
   col = st_col;
@@ -159,8 +148,8 @@ OSD::setPanel(uint8_t st_col, uint8_t st_row){
 
 //------------------ open panel ----------------------------------------------
 
-void
-OSD::openPanel(void){
+void OSD::openPanel(void)
+{
   unsigned int linepos;
   byte settings, char_address_hi, char_address_lo;
  
@@ -188,8 +177,8 @@ OSD::openPanel(void){
 
 //------------------ close panel ---------------------------------------------
 
-void
-OSD::closePanel(void){  
+void OSD::closePanel(void)
+{  
   Spi.transfer(MAX7456_DMDI_reg);
   Spi.transfer(MAX7456_END_string); //This is needed "trick" to finish auto increment
   digitalWrite(MAX7456_SELECT,HIGH);
@@ -199,8 +188,8 @@ OSD::closePanel(void){
 
 //------------------ write single char ---------------------------------------------
 
-void
-OSD::openSingle(uint8_t x, uint8_t y){
+void OSD::openSingle(uint8_t x, uint8_t y)
+{
   unsigned int linepos;
   byte char_address_hi, char_address_lo;
  
@@ -223,8 +212,8 @@ OSD::openSingle(uint8_t x, uint8_t y){
 
 //------------------ write ---------------------------------------------------
 
-size_t
-OSD::write(uint8_t c){
+size_t OSD::write(uint8_t c)
+{
   if(c == '|'){
     closePanel(); //It does all needed to finish auto increment and change current row
     openPanel(); //It does all needed to re-enable auto increment
@@ -238,8 +227,8 @@ OSD::write(uint8_t c){
 
 //---------------------------------
 
-void
-OSD::control(uint8_t ctrl){
+void OSD::control(uint8_t ctrl)
+{
   digitalWrite(MAX7456_SELECT,LOW);
   Spi.transfer(MAX7456_VM0_reg);
   switch(ctrl){
@@ -255,8 +244,7 @@ OSD::control(uint8_t ctrl){
   digitalWrite(MAX7456_SELECT,HIGH);
 }
 
-void 
-OSD::write_NVM(int font_count, uint8_t *character_bitmap)
+void OSD::write_NVM(int font_count, uint8_t *character_bitmap)
 {
   byte x;
   byte char_address_hi, char_address_lo;
@@ -298,13 +286,13 @@ OSD::write_NVM(int font_count, uint8_t *character_bitmap)
 //------------------ pure virtual ones (just overriding) ---------------------
 
 int  OSD::available(void){
-	return 0;
+  return 0;
 }
 int  OSD::read(void){
-	return 0;
+  return 0;
 }
 int  OSD::peek(void){
-	return 0;
+  return 0;
 }
 void OSD::flush(void){
 }
