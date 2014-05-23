@@ -44,7 +44,7 @@ BetterStream::printf(const char *fmt, ...)
 }
 
 void
-BetterStream::printf_P(const char *fmt, ...)
+BetterStream::_printf_P(const char *fmt, ...)
 {
         va_list ap;
 

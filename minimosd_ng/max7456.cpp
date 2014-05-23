@@ -1,7 +1,7 @@
 
 #include <FastSerial.h>
 
-#include "ArduCam_Max7456.h"
+#include "max7456.h"
 // Get the common arduino functions
 #if defined(ARDUINO) && ARDUINO >= 100
 	#include "Arduino.h"
