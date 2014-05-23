@@ -47,6 +47,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>
 
 #define isPAL 1
 
+#define MINIMOSD_PLANE
+//#define MINIMOSD_COPTER
+
+
 /* **********************************************/
 /* ***************** INCLUDES *******************/
 

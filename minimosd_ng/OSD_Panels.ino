@@ -10,17 +10,24 @@ void startPanels(){
 void panLogo(){
     osd.setPanel(5, 5);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
     osd.printf_P(PSTR("MinimOSD-Extra 2.4|Plane r780"));
+#endif
+#ifdef MINIMOSD_COPTER
+    osd.printf_P(PSTR("MinimOSD-Extra 2.4|Copter r791"));
+#endif
     osd.closePanel();
 }
 
 
 /******* PANELS - POSITION *******/
 
-void writePanels(){ 
+void writePanels(){
+#ifdef MINIMOSD_PLANE 
   if ((takeofftime == 1) && (osd_alt_to_home > 10 || osd_groundspeed > 1 || osd_throttle > 1 || osd_home_distance > 100)){
     landed = millis();
   }
+#endif
 
   //Base panel selection
   //No mavlink data available panel
@@ -35,8 +42,14 @@ void writePanels(){
     panWaitMAVBeats(5,10); //Waiting for MAVBeats...
   }
   //Flight summary panel
+#ifdef MINIMOSD_PLANE
   //Only show flight summary 7 seconds after landing
   else if ((millis() - 7000) > landed){ 
+#endif
+#ifdef MINIMOSD_COPTER
+  //Only show flight summary 10 seconds after landing and if throttle < 15
+  else if (!motor_armed && (((millis() / 10000) % 2) == 0) && (tdistance > 50)){ 
+#endif
     if (currentBasePanel != 1){
       osd.clear();
       currentBasePanel = 1;
@@ -53,8 +66,7 @@ void writePanels(){
       osd_clear = 0;
       currentBasePanel = 0;
     }
-    if(panel != npanels)
-    {
+    if(panel != npanels) {
       //Testing bits from 8 bit register A 
       //if(ISa(panel,Cen_BIT)) panCenter(panCenter_XY[0][panel], panCenter_XY[1][panel]);   //4x2
       //if(ISd(panel,Warn_BIT)) panWarn(panWarn_XY[0][panel], panWarn_XY[1][panel]); // this must be here so warnings are always checked
@@ -94,18 +106,29 @@ void writePanels(){
       if(ISc(panel,CurA_BIT)) panCur_A(panCur_A_XY[0][panel], panCur_A_XY[1][panel]);
 
       //Testing bits from 8 bit register D 
+#ifdef MINIMOSD_PLANE
       if(ISd(panel,WindS_BIT)) panWindSpeed(panWindSpeed_XY[0][panel], panWindSpeed_XY[1][panel]);
+#endif
       if(ISd(panel,Climb_BIT)) panClimb(panClimb_XY[0][panel], panClimb_XY[1][panel]);
+#ifdef MINIMOSD_PLANE
       if(ISd(panel,Tune_BIT)) panTune(panTune_XY[0][panel], panTune_XY[1][panel]);
+#endif
       if(ISd(panel,RSSI_BIT)) panRSSI(panRSSI_XY[0][panel], panRSSI_XY[1][panel]); //??x??
       if(ISd(panel,Eff_BIT)) panEff(panEff_XY[0][panel], panEff_XY[1][panel]);
+#ifdef MINIMOSD_PLANE
       if(ISd(panel,CALLSIGN_BIT)) panCALLSIGN(panCALLSIGN_XY[0][panel], panCALLSIGN_XY[1][panel]);
+#endif
       if(ISe(panel,TEMP_BIT)) panTemp(panTemp_XY[0][panel], panTemp_XY[1][panel]);
       //if(ISe(panel,Ch_BIT)) panCh(panCh_XY[0][panel], panCh_XY[1][panel]);
       if(ISe(panel,DIST_BIT)) panDistance(panDistance_XY[0][panel], panDistance_XY[1][panel]);
     }
   }
+#ifdef MINIMOSD_PLANE
   if(ISd(0,CALLSIGN_BIT)) panCALLSIGN(panCALLSIGN_XY[0][panel], panCALLSIGN_XY[1][panel]); //call sign even in off panel
+#endif
+#ifdef MINIMOSD_COPTER
+  if(ISd(panel % npanels,CALLSIGN_BIT)) panCALLSIGN(panCALLSIGN_XY[0][panel], panCALLSIGN_XY[1][panel]); //call sign even in off panel
+#endif
   timers();
     // OSD debug for development (Shown on top-middle panels) 
 #ifdef membug
@@ -114,8 +137,6 @@ void writePanels(){
     osd.printf("%i",freeMem()); 
     osd.closePanel();
 #endif
-  
-
 }
 /******* PANELS - DEFINITION *******/
 
@@ -135,10 +156,18 @@ void panCOG(int first_col, int first_line){
 //    osd_COG_arrow_rotate_int = (((int)osd_cog / 100 - (int)osd_heading)/360 * 16 + 16) % 16 + 1; // [1, 16]
 //    osd_COG_arrow_rotate_int = (osd_cog / 100 - osd_heading) / 360 * 16 + 1;
     osd_COG_arrow_rotate_int = round(((osd_cog / 100) - osd_heading)/360.0 * 16.0 +1); //Convert to int 1-16 
+
+#ifdef MINIMOSD_PLANE
     if(osd_COG_arrow_rotate_int < 1 ) osd_COG_arrow_rotate_int += 16;
 //    if(osd_COG_arrow_rotate_int == 0) osd_COG_arrow_rotate_int = 16;    
     else if(osd_COG_arrow_rotate_int > 16) osd_COG_arrow_rotate_int -= 16;
-    
+#endif
+#ifdef MINIMOSD_COPTER
+    if(osd_COG_arrow_rotate_int < 0 ) osd_COG_arrow_rotate_int += 16;
+    if(osd_COG_arrow_rotate_int == 0) osd_COG_arrow_rotate_int = 16;    
+    if(osd_COG_arrow_rotate_int == 17) osd_COG_arrow_rotate_int = 1;
+#endif
+
     if (((osd_cog / 100) - osd_heading) > 180){
        off_course = (osd_cog / 100 - osd_heading) - 360;
     }else if (((osd_cog / 100) - osd_heading) < -180){
@@ -148,8 +177,6 @@ void panCOG(int first_col, int first_line){
     }
     
     showArrow((uint8_t)osd_COG_arrow_rotate_int,2);
-
-
     osd.closePanel();
 }
 
@@ -179,11 +206,19 @@ void panDistance(int first_col, int first_line){
 // Output : 
 // Size   : 
 // Staus  : done
-void panFdata(){
-     osd.setPanel(11, 3);
-    osd.openPanel();                          
+void panFdata()
+{
+#ifdef MINIMOSD_PLANE
+  osd.setPanel(11, 3);
+  osd.openPanel();                          
 //    osd.printf("%c%3i%c%02i|%c%5.0f%c|%c%5.0f%c|%c%5.0f%c|%c%5.0f%c|%c%5.0f%c|%c%5.0f%c", 0x08,((int)start_Time/60)%60,0x3A,(int)start_Time%60, 0x0b, ((max_home_distance) * converth), high, 0x1b, ((tdistance) * converth), high, 0x13,(max_osd_airspeed * converts), spe,0x14,(max_osd_groundspeed * converts),spe,0x12, (max_osd_home_alt * converth), high,0x1d,(max_osd_windspeed * converts),spe);
     osd.printf("%c%3i%c%02i|%c%5.0f%c|%c%5.0f%c|%c%5i%c|%c%5i%c|%c%5i%c|%c%5i%c|%c%5.0f%c|%c%11.6f|%c%11.6f", 0x08,((int)(start_Time/60)),0x3A,(int)start_Time%60, 0x0b, ((max_home_distance) * converth), high, 0x8f, (tdistance * converth), high, 0x13,(int)(max_osd_airspeed * converts), spe,0x14,(int)(max_osd_groundspeed * converts),spe,0x12, (int)(max_osd_home_alt * converth), high,0x1d,(int)(max_osd_windspeed * converts),spe, 0x17, mah_used, 0x01, 0x03, (double)osd_lat, 0x04, (double)osd_lon);
+#endif
+#ifdef MINIMOSD_COPTER
+  osd.setPanel(11, 4);
+  osd.openPanel();
+  osd.printf("%c%3i%c%02i|%c%5i%c|%c%5i%c|%c%5i%c|%c%5i%c|%c%10.6f|%c%10.6f", 0x08,((int)total_flight_time_seconds/60)%60,0x3A,(int)total_flight_time_seconds%60, 0x0B, (int)((max_home_distance) * converth), high, 0x8F, (int)((tdistance) * converth), high,0x14,(int)(max_osd_groundspeed * converts),spe,0x12, (int)(max_osd_home_alt * converth), high, 0x03, (double)osd_lat, 0x04, (double)osd_lon);
+#endif
     osd.closePanel();
 }
 
@@ -197,8 +232,14 @@ void panFdata(){
 void panTemp(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
 //    osd.printf("%c%5.1f%c", 0x0a, (float(temperature * tempconv + tempconvAdd) / 100), temps);
     osd.printf("%5.1f%c", (float(temperature * tempconv + tempconvAdd) / 1000), temps);
+#endif
+#ifdef MINIMOSD_COPTER
+    //do_converts();
+    osd.printf("%5.1f%c", (float(temperature / 10 * tempconv + tempconvAdd) / 100), temps);
+#endif
     osd.closePanel();
 }
 
@@ -209,9 +250,12 @@ void panTemp(int first_col, int first_line){
 // Size   : 1 x 7Hea  (rows x chars)
 // Staus  : done
 
-void panEff(int first_col, int first_line){
+void panEff(int first_col, int first_line)
+{
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+
+#ifdef MINIMOSD_PLANE
     if (osd_throttle >= 1){
       if (ma == 0) {
               ma = 1;
@@ -250,7 +294,19 @@ void panEff(int first_col, int first_line){
             
         
     }
-
+#endif
+#ifdef MINIMOSD_COPTER
+  //Check takeoff just to prevent inicial false readings
+  if (motor_armed)
+  {
+    if(osd_battery_remaining_A != last_battery_reading)
+    {
+      remaining_estimated_flight_time_seconds = ((float)osd_battery_remaining_A * total_flight_time_milis / (max_battery_reading - osd_battery_remaining_A)) / 1000;
+      last_battery_reading = osd_battery_remaining_A;
+    }
+    osd.printf("%c%2i%c%02i", 0x17,((int)remaining_estimated_flight_time_seconds/60)%60,0x3A,(int)remaining_estimated_flight_time_seconds%60);
+  }
+#endif
     osd.closePanel();
 }
 
@@ -431,11 +487,6 @@ void panWindSpeed(int first_col, int first_line){
 void panOff(){
   bool rotatePanel = 0;
 
-  if(ch_toggle == 5) ch_raw = chan5_raw;
-  else if(ch_toggle == 6) ch_raw = chan6_raw;
-  else if(ch_toggle == 7) ch_raw = chan7_raw;
-  else if(ch_toggle == 8) ch_raw = chan8_raw;
-
   //If there is a warning force switch to panel 0
   if(canswitch == 0){
     if(panel != panel_auto_switch){
@@ -461,7 +512,11 @@ void panOff(){
       }
     }
     else {
-      
+      if(ch_toggle == 5) ch_raw = chan5_raw;
+      else if(ch_toggle == 6) ch_raw = chan6_raw;
+      else if(ch_toggle == 7) ch_raw = chan7_raw;
+      else if(ch_toggle == 8) ch_raw = chan8_raw;
+
       //Switch mode by value
       if (switch_mode == 0){
         //First panel
@@ -507,8 +562,9 @@ void panOff(){
 // Output : Current symbol and altitude value in meters from MAVLink
 // Size   : 1 x 7Hea  (rows x chars)
 // Staus  : done
-    
-  void panTune(int first_col, int first_line){
+#ifdef MINIMOSD_PLANE    
+void panTune(int first_col, int first_line)
+{
   osd.setPanel(first_col, first_line);
   osd.openPanel();
 
@@ -516,7 +572,7 @@ void panOff(){
 
   osd.closePanel();
 }
-
+#endif
 /* **************************************************************** */
 // Panel  : panCur_A
 // Needs  : X, Y locations
@@ -542,10 +598,17 @@ void panCur_A(int first_col, int first_line){
 void panAlt(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
 //    osd.printf("%c%5.0f%c",0x11, (double)(osd_alt * converth), high);
 //    if (iconMSL == 1) 
     if(EEPROM.read(SIGN_MSL_ON_ADDR) != 0) osd.printf_P(PSTR("\x11"));
     osd.printf("%5.0f%c", (double)(osd_alt * converth), high);
+#endif
+#ifdef MINIMOSD_COPTER
+    //if(EEPROM.read(SIGN_MSL_ON_ADDR) != 0) osd.printf_P("\x11");
+    if(EEPROM.read(SIGN_MSL_ON_ADDR) != 0) osd.printf("%c", 0x11);
+    osd.printf("%5.0f%c", (double)(osd_alt_gps * converth), high);
+#endif
     osd.closePanel();
 }
 
@@ -559,7 +622,9 @@ void panAlt(int first_col, int first_line){
 void panClimb(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
     vs = (osd_climb * converth * 60) * 0.1 + vs * 0.9;
+#endif
     osd.printf("%c%4.0f%c%c", 0x15, int(vs / 10.0) * 10.0, climbchar, 0x20);
     osd.closePanel();
 }
@@ -574,10 +639,17 @@ void panClimb(int first_col, int first_line){
 void panHomeAlt(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();   
+#ifdef MINIMOSD_PLANE
 //    osd.printf("%c%5.0f%c",0x12, (double)(osd_alt_to_home * converth), high);
 //    if (iconHA == 1) 
     if(EEPROM.read(SIGN_HA_ON_ADDR) != 0) osd.printf_P(PSTR("\x12"));
     osd.printf("%5.0f%c", (double)(osd_alt_to_home * converth), high);
+#endif
+#ifdef MINIMOSD_COPTER
+    //if(EEPROM.read(SIGN_HA_ON_ADDR) != 0) osd.printf_P('\x12');
+    if(EEPROM.read(SIGN_HA_ON_ADDR) != 0) osd.printf("%c", 0x12);
+    osd.printf("%5.0f%c", (double)(osd_alt_rel * converth), high);
+#endif
     osd.closePanel();
 }
 
@@ -591,9 +663,15 @@ void panHomeAlt(int first_col, int first_line){
 void panVel(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
 //    osd.printf("%c%3.0f%c",0x14,(double)(osd_groundspeed * converts),spe);
 //    if (iconGS == 1) 
     if(EEPROM.read(SIGN_GS_ON_ADDR) != 0) osd.printf_P(PSTR("\x14"));
+#endif
+#ifdef MINIMOSD_COPTER
+    //if(EEPROM.read(SIGN_GS_ON_ADDR) != 0) osd.printf_P("\x14");
+    if(EEPROM.read(SIGN_GS_ON_ADDR) != 0) osd.printf("%c", 0x14);
+#endif
     osd.printf("%3.0f%c",(double)(osd_groundspeed * converts),spe);
     osd.closePanel();
 }
@@ -608,9 +686,15 @@ void panVel(int first_col, int first_line){
 void panAirSpeed(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
 //    osd.printf("%c%3.0f%c", 0x13, (double)(osd_airspeed * converts), spe);
 //    if (iconAS == 1) 
     if(EEPROM.read(SIGN_AS_ON_ADDR) != 0) osd.printf_P(PSTR("\x13"));        
+#endif
+#ifdef MINIMOSD_COPTER
+    //if(EEPROM.read(SIGN_AS_ON_ADDR) != 0) osd.printf_P("\x13");
+    if(EEPROM.read(SIGN_AS_ON_ADDR) != 0) osd.printf("%c", 0x13);
+#endif
     osd.printf("%3.0f%c", (double)(osd_airspeed * converts), spe); 
     osd.closePanel();
 }
@@ -636,7 +720,12 @@ void panWarn(int first_col, int first_line){
                   warning[1] = 1; 
                   warning[0] = 1;
                   }
+#ifdef MINIMOSD_PLANE
                 if (osd_airspeed * converts < stall && takeofftime == 1) {
+#endif
+#ifdef MINIMOSD_COPTER
+                if (abs(vs) > stall * 10) {
+#endif
                   warning[2] = 1; 
                   warning[0] = 1;
                   }
@@ -661,37 +750,42 @@ void panWarn(int first_col, int first_line){
 
             // Prepare for printf in rotation
             if (rotation == 0) if (warning[0] == 0 || warning[0] + warning[1] + warning[2] + warning[3] + warning[4] + warning[5] == 2) {
-                warning_string = "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
+                warning_string = "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"; // Blank
               }else{
                   rotation = 1; 
               } 
               
             if (rotation == 1) if (warning[1] == 1) {
-                warning_string = "\x20\x4E\x6F\x20\x47\x50\x53\x20\x66\x69\x78\x21";
+                warning_string = "\x20\x4E\x6F\x20\x47\x50\x53\x20\x66\x69\x78\x21";  // No GPS fix!
               }else{
                   rotation = 2; 
               }
               
             if (rotation == 2) if (warning[2] == 1) {
-                warning_string = "\x20\x20\x20\x53\x74\x61\x6c\x6c\x21\x20\x20\x20";
+#ifdef MINIMOSD_PLANE
+                warning_string = "\x20\x20\x20\x53\x74\x61\x6c\x6c\x21\x20\x20\x20";  // Stall!
+#endif
+#ifdef MINIMOSD_COPTER
+                warning_string = "\x48\x69\x67\x68\x20\x56\x53\x70\x65\x65\x64\x21"; // Hi VSpeed!
+#endif
               }else{
                   rotation = 3; 
               }
               
             if (rotation == 3) if (warning[3] == 1) {
-                warning_string = "\x20\x4f\x76\x65\x72\x53\x70\x65\x65\x64\x21\x20";
+                warning_string = "\x20\x4f\x76\x65\x72\x53\x70\x65\x65\x64\x21\x20"; // Overspeed!
               }else{
                   rotation = 4; 
               }
               
             if (rotation == 4) if (warning[4] == 1) {
-                warning_string = "\x42\x61\x74\x74\x65\x72\x79\x20\x4c\x6f\x77\x21";
+                warning_string = "\x42\x61\x74\x74\x65\x72\x79\x20\x4c\x6f\x77\x21"; // Battery Low!
               }else{
                   rotation = 5; 
               }
               
             if (rotation == 5) if (warning[5] == 1) {
-                warning_string = "\x20\x20\x4c\x6f\x77\x20\x52\x73\x73\x69\x20\x20";
+                warning_string = "\x20\x20\x4c\x6f\x77\x20\x52\x73\x73\x69\x20\x20"; // Low Rssi
 //                  rotation = 6;
               }
             
@@ -757,6 +851,7 @@ void panBatteryPercent(int first_col, int first_line){
 void panTime(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
     
     start_Time = (millis()/1000) - FTime;
 //    osd.printf("%c%2i%c%02i", 0x08,((int)start_Time/60)%60,0x3A,(int)start_Time%60);
@@ -768,6 +863,10 @@ void panTime(int first_col, int first_line){
 //    }else{
 //    osd.printf("%2i%c%02i", ((int)start_Time/3600)%60, 0x3A, ((int)start_Time/60)%60);
 //    }
+#endif
+#ifdef MINIMOSD_COPTER
+  osd.printf("%2i%c%02i",((int)total_flight_time_seconds/60)%60,0x3A,(int)total_flight_time_seconds%60);
+#endif
     osd.closePanel();
 }
 
@@ -781,6 +880,7 @@ void panTime(int first_col, int first_line){
 void panHomeDis(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
 //    osd.printf("%c%5.0f%c", 0x0b, (double)((osd_home_distance) * converth), high);
 
 
@@ -789,7 +889,10 @@ void panHomeDis(int first_col, int first_line){
     }else{
       osd.printf("%c%5.0f%c", 0x0b, (osd_home_distance * converth), high);
     }
-
+#endif
+#ifdef MINIMOSD_COPTER
+  osd.printf("%c%5.0f%c", 0x0b, (double)((osd_home_distance) * converth), high);
+#endif  
     osd.closePanel();
 }
 
@@ -817,11 +920,21 @@ void panHomeDis(int first_col, int first_line){
 void panHorizon(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
     osd.printf_P(PSTR("\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20|\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20|\xc6\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xc5|\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20|\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20|"));
     osd.closePanel();
     showHorizon((first_col + 1), first_line);
     //Show ILS on  HUD
 //    showILS(first_col, first_line);
+#endif
+#ifdef MINIMOSD_COPTER
+    osd.printf_P(PSTR("\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20|\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20|\xC6\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xC5\x20|\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20|\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"));
+
+    osd.closePanel();
+    showHorizon((first_col + 1), first_line);
+    //Show ground level on  HUD
+    showILS(first_col, first_line);
+#endif
 }
 
 /* **************************************************************** */
@@ -939,10 +1052,15 @@ void panGPSats(int first_col, int first_line){
 void panGPS(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
 //    osd.printf("%c%10.6f|%c%10.6f", 0x03, (double)osd_lat, 0x04, (double)osd_lon);
     osd.printf("%11.6f|%11.6f", (double)osd_lat, (double)osd_lon);
 //    if (blinker == 0) osd.printf("%c%10.6f", 0x03, (double)osd_lat);
 //    else osd.printf("%c%10.6f", 0x04, (double)osd_lon);
+#endif
+#ifdef MINIMOSD_COPTER
+  osd.printf("%10.6f|%10.6f", (double)osd_lat, (double)osd_lon);
+#endif
     osd.closePanel();
 }
 
@@ -1042,6 +1160,7 @@ void panRose(int first_col, int first_line){
 void panWPDis(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
     
     wp_target_bearing_rotate_int = round(((float)wp_target_bearing - osd_heading)/360.0 * 16.0) + 1; //Convert to int 0-16 
     if(wp_target_bearing_rotate_int < 1 ) wp_target_bearing_rotate_int += 16; //normalize
@@ -1058,6 +1177,22 @@ void panWPDis(int first_col, int first_line){
       }else{
         osd.printf_P(PSTR("\x20\x20\x20\x20\x20\x20\x20\x20"));
           }
+#endif
+#ifdef MINIMOSD_COPTER
+    wp_target_bearing_rotate_int = ((int)round(((float)wp_target_bearing - osd_heading)/360.0 * 16.0) + 16) % 16 + 1; //[1, 16]
+    
+    if (xtrack_error > 999) xtrack_error = 999;
+    else if (xtrack_error < -999) xtrack_error = -999;
+
+    osd.printf("%c%c%2i%c%4.0f%c|",0x57, 0x70, wp_number,0x0,(double)((float)(wp_dist) * converth),high);
+    showArrow((uint8_t)wp_target_bearing_rotate_int,0);
+    if (osd_mode == 10){
+
+        osd.printf("%c%c%c%4.0f%c", 0x20, 0x58, 0x65, (xtrack_error* converth), high);
+    }else{
+        osd.printf_P(PSTR("\x20\x20\x20\x20\x20\x20\x20\x20"));
+    }
+#endif
     osd.closePanel();
 }
 
@@ -1085,6 +1220,7 @@ void panHomeDir(int first_col, int first_line){
 void panFlightMode(int first_col, int first_line){
     osd.setPanel(first_col, first_line);
     osd.openPanel();
+#ifdef MINIMOSD_PLANE
     //char c1 = 0x7f ;//"; char c2; char c3; char c4; char c5; 
     char* mode_str="";
     if (osd_mode == 0) mode_str = "manu"; //Manual 
@@ -1103,6 +1239,28 @@ void panFlightMode(int first_col, int first_line){
     
 //    osd.printf("%c%s", 0x7f, mode_str);
     osd.printf("%s", mode_str);
+#endif
+#ifdef MINIMOSD_COPTER
+    //char c1 = 0xE0 ;//"; char c2; char c3; char c4; char c5; 
+    char* mode_str="";
+    if (osd_mode == 0) mode_str = "stab"; //Stabilize
+    else if (osd_mode == 1) mode_str = "acro"; //Acrobatic
+    else if (osd_mode == 2) mode_str = "alth"; //Alt Hold
+    else if (osd_mode == 3) mode_str = "auto"; //Auto
+    else if (osd_mode == 4) mode_str = "guid"; //Guided
+    else if (osd_mode == 5) mode_str = "loit"; //Loiter
+    else if (osd_mode == 6) mode_str = "retl"; //Return to Launch
+    else if (osd_mode == 7) mode_str = "circ"; //Circle
+    //else if (osd_mode == 8) mode_str = "posi"; //Position
+    else if (osd_mode == 9) mode_str = "land"; //Land
+    else if (osd_mode == 10) mode_str = "oflo"; //OF_Loiter
+    else if (osd_mode == 11) mode_str = "drif"; //OF_Loiter
+    else if (osd_mode == 13) mode_str = "sprt"; //OF_Loiter
+    else if (osd_mode == 14) mode_str = "flip"; //OF_Loiter
+    else if (osd_mode == 15) mode_str = "tune"; //OF_Loiter
+    else if (osd_mode == 16) mode_str = "hybr"; //OF_Loiter
+    osd.printf("%c%s%c", 0x7F, mode_str, motor_armed * 0x86);
+#endif
     osd.closePanel();
 }
 
@@ -1111,12 +1269,25 @@ void panFlightMode(int first_col, int first_line){
 // Show those fancy 2 char arrows
 
 void showArrow(uint8_t rotate_arrow,uint8_t method) {  
+
+#ifdef MINIMOSD_PLANE
     char arrow_set1 = 0x0;
   
     if(rotate_arrow == 0){
       rotate_arrow = 1;
     }
     arrow_set1 = rotate_arrow * 2 + 0x8E;
+
+#endif
+#ifdef MINIMOSD_COPTER
+    int arrow_set1 = 0x90;
+    //We trust that we receive rotate_arrow [1, 16] so 
+    //it's no needed (rotate_arrow <= 16) in the if clause
+    arrow_set1 += rotate_arrow * 2 - 2;
+    //arrow_set2 = arrow_set1 + 1;
+//    if(method == 1) osd.printf("%c%3.0f%c|%c%c%2.0f%c",0x1D,(double)(osd_windspeed * converts),spe, (byte)arrow_set1, (byte)(arrow_set1 + 1),(double)(osd_windspeedz * converts),spe);
+
+#endif
 
 //    if(method == 1) osd.printf("%c%3.0f%c|%c%c%2.0f%c",0x1d,(double)(osd_windspeed * converts),spe, arrow_set1, arrow_set2,(double)(osd_windspeedz * converts),spe);
     if(method == 1) osd.printf("%c%3.0f%c|%c%c%2.0f%c",0x1d,(double)(osd_windspeed * converts),spe, arrow_set1, arrow_set1 + 1,(double)(nor_osd_windspeed * converts),spe);
@@ -1213,6 +1384,8 @@ void showHorizon(int start_col, int start_row) {
 }
 
 // Calculate and shows ILS
+
+#ifdef MINIMOSD_PLANE
 /*
 void showILS(int start_col, int start_row) { 
     //Vertical calculation
@@ -1243,6 +1416,49 @@ void showILS(int start_col, int start_row) {
     }
 }
 */
+#endif
+#ifdef MINIMOSD_COPTER
+void showILS(int start_col, int start_row) { 
+//Show line on panel center because horizon line can be
+    //high or low depending on pitch attitude
+    int subval_char = 0xCF;
+
+    //shift alt interval from [-5, 5] to [0, 10] interval, so we
+    //can work with remainders.
+    //We are using a 0.2 altitude units as resolution (1 decimal place)
+    //so convert we convert it to times 10 to work 
+    //only with integers and save some bytes
+    //int alt = (osd_alt_to_home * converth + 5) * 10;
+    int alt = (osd_alt_rel * converth + 5) * 4.4; //44 possible position 5 rows times 9 chars
+    
+    if((alt < 44) && (alt > 0)){
+        //We have 9 possible chars
+        //(alt * 5) -> 5 represents 1/5 which is our resolution. Every single
+        //line (char) change represents 0,2 altitude units
+        //% 10 -> Represents our 10 possible characters
+        //9 - -> Inverts our selected char because when we gain altitude
+        //the selected char has a lower position in memory
+        //+ 5 -> Is the memory displacement od the first altitude charecter 
+        //in memory (it starts at 0x05
+        //subval_char = (99 - ((alt * 5) % 100)) / 9 + 0xC7;
+        subval_char = (8 - (alt  % 9)) + 0xC7;
+        //Each row represents 2 altitude units
+        start_row += (alt / 9);
+    }
+    else if(alt >= 44){
+        //Copter is too high. Ground is way too low to show on panel, 
+        //so show down arrow at the bottom
+        subval_char = 0xC8; 
+        start_row += 4;
+    }
+
+    //Enough calculations. Let's show the result
+    osd.openSingle(start_col + AH_COLS + 2, start_row);
+    osd.printf("%c", subval_char);
+}
+#endif
+
+
 void do_converts()
 {
 //  if(EEPROM.read(SIGN_MSL_ON_ADDR) == 0) EEPROM.write(876, 1);
@@ -1286,7 +1502,12 @@ void do_converts()
         high = 0x66;
         temps = 0xbb;
         tempconv = 18;
+#ifdef MINIMOSD_PLANE
         tempconvAdd = 32000;
+#endif
+#ifdef MINIMOSD_COPTER
+        tempconvAdd = 3200;
+#endif
         distchar = 0x1c;
         distconv = 5280;
         climbchar = 0x1e;
@@ -1311,3 +1532,4 @@ void timers()
 //  }
 //  }
 }
+

@@ -22,8 +22,12 @@ static int16_t	    wp_target_bearing = 0; // Bearing to current MISSION/target i
 static int8_t       wp_target_bearing_rotate_int = 0;
 static uint16_t     wp_dist = 0; // Distance to active MISSION in meters
 static uint8_t      wp_number = 0; // Current waypoint number
+
+#ifdef MINIMOSD_PLANE
 static float	      alt_error = 0; // Current altitude error in meters
 static float        aspd_error = 0; // Current airspeed error in meters/second
+#endif
+
 static float	    xtrack_error = 0; // Current crosstrack error on x-y plane in meters
 static float        eff = 0; //Efficiency
 static uint16_t     eph = 0;
@@ -31,7 +35,12 @@ static uint16_t     eph = 0;
 static uint8_t      currentBasePanel=255; //0 - Normal OSD; 1 - Flight summary; 2 - No mavlink data (pre-set = 255 to force osd.clear() after boot screen
 static uint8_t      base_mode=0;
 static uint8_t      panel_auto_switch=0;
-//static bool         motor_armed = 0;
+
+#ifdef MINIMOSD_COPTER
+static bool         motor_armed = 0;
+static bool         last_armed_status = 0;
+#endif
+
 static bool         ma = 0;
 static bool         osd_clear = 0;
 static uint16_t     ch_raw = 0;
@@ -50,7 +59,9 @@ static uint8_t      ch_toggle = 0;
 static uint8_t      check_warning = 1;
 //static boolean      osd_set = 0;
 static boolean      switch_mode = 0;
+#ifdef MINIMOSD_PLANE
 static boolean      takeofftime = 0;
+#endif
 //static boolean      haltset = 0;
 //static boolean      pal_ntsc = 0;
 
@@ -69,25 +80,47 @@ static int16_t      temps = 0;
 static float        osd_vbat_A = 0;                 // Battery A voltage in milivolt
 static int16_t      osd_curr_A = 0;                 // Battery A current
 static float        mah_used = 0;
-static int8_t       osd_battery_remaining_A = 0;    // 0 to 100 <=> 0 to 1000
+static uint8_t       osd_battery_remaining_A = 0;    // 0 to 100 <=> 0 to 1000
+#ifdef MINIMOSD_COPTER
+static uint8_t       max_battery_reading = 0;    // 0 to 100 <=> 0 to 1000
+static uint8_t       last_battery_reading = 0;    // 0 to 100 <=> 0 to 1000
+#endif
+
 static uint8_t      batt_warn_level = 0;
 
 //static uint8_t    osd_battery_pic_A = 0xb4;       // picture to show battery remaining
 //static float      osd_vbat_B = 0;               // voltage in milivolt
+#ifdef MINIMOSD_PLANE
 //static float    timer_B = 0;                 // Battery B current
+static float        start_Time = -1.0;
+#endif
+#ifdef MINIMOSD_COPTER
+//static float      osd_curr_B = 0;                 // Battery B current
+static uint16_t     remaining_estimated_flight_time_seconds = 0.0;
+#endif
 //static uint16_t   osd_battery_remaining_B = 0;  // 0 to 100 <=> 0 to 1000
 //static uint8_t    osd_battery_pic_B = 0xb4;     // picture to show battery remaining
-static float        start_Time = -1.0;
+
 static uint8_t      osd_mode = 0;                   // Navigation mode from RC AC2 = CH5, APM = CH8
 static uint8_t      osd_nav_mode = 0;               // Navigation mode from RC AC2 = CH5, APM = CH8
 //static unsigned long text_timer = 0;
 static unsigned long one_sec_timer = 0;
 static unsigned long mavLinkTimer = 0;
 //static unsigned long warning_timer =0;
+#ifdef MINIMOSD_PLANE
 static unsigned long runt =0;
 static unsigned long FTime = 0;
-//static unsigned long CallSignBlink = 0;
 static unsigned long landed = 4294967295;
+#endif
+
+#ifdef MINIMOSD_COPTER
+//static unsigned long current_flight_start_Time = 0.0;
+static unsigned long total_flight_time_milis = 0.0;
+static uint16_t      total_flight_time_seconds = 0.0;
+static unsigned long runt = 0;
+#endif
+
+//static unsigned long CallSignBlink = 0;
 
 //static uint8_t      warning_type = 0;
 static char*        warning_string;
@@ -111,8 +144,10 @@ static uint16_t        off_course;
 static uint8_t      osd_got_home = 0;               // tels if got home position or not
 static float        osd_home_lat = 0;               // home latidude
 static float        osd_home_lon = 0;               // home longitude
+#ifdef MINIMOSD_PLANE
 static float        osd_home_alt = 0; 
 static float        osd_alt_to_home = 0; 
+#endif
 static long         osd_home_distance = 0;          // distance from home
 static uint8_t      osd_home_direction;             // Arrow direction pointing to home (1-16 to CW loop)
 //static int          takeoff_heading = -400;         // Calculated takeoff heading
@@ -123,7 +158,14 @@ static int16_t       osd_roll = 0;                   // roll from DCM
 static float        osd_heading = 0;                // ground course heading from GPS
 static float        glide = 0;
 
+#ifdef MINIMOSD_PLANE
 static float        osd_alt = 0;                    // altitude
+#endif
+#ifdef MINIMOSD_COPTER
+static float        osd_alt_abs = 0;                    // altitude
+static float        osd_alt_rel = 0;                    // altitude
+static float        osd_alt_gps = 0;                    // altitude
+#endif
 static float        osd_airspeed = 0;              // airspeed
 static float        osd_windspeed = 0;
 static float        osd_windspeedz = 0;
@@ -233,7 +275,9 @@ byte panHorizon_XY[2][npanels]; // = {8,centercalc}
 byte panWarn_XY[2][npanels];
 byte panWindSpeed_XY[2][npanels];
 byte panClimb_XY[2][npanels];
+#ifdef MINIMOSD_PLANE
 byte panTune_XY[2][npanels];
+#endif
 byte panRSSI_XY[2][npanels];
 byte panEff_XY[2][npanels];
 byte panCALLSIGN_XY[2][npanels];
