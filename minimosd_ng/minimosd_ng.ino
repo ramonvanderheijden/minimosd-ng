@@ -45,10 +45,20 @@ along with this program. If not, see <http://www.gnu.org/licenses/>
 #undef PSTR 
 #define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
 
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 1
+
 /* Define your type of OSD here */
 #define MINIMOSD_PLANE
 //#define MINIMOSD_COPTER
 
+
+
+#if defined(MINIMOSD_PLANE)
+#define MINIMOSD_TYPE_ID 0
+#elif defined(MINIMOSD_COPTER)
+#define MINIMOSD_TYPE_ID 1
+#endif
 
 /* **********************************************/
 /* ***************** INCLUDES *******************/
@@ -156,6 +166,7 @@ void setup()
   // House cleaning, clear display and enable timers
   //osd.clear();
   //mavlinkTimer.Enable();
+  update_id();
 }
 
 
@@ -202,7 +213,5 @@ void OnMavlinkTimer()
 
   writePanels();       // writing enabled panels (check OSD_Panels Tab)
   setFdataVars();
-
-  checkModellType();
 }
 

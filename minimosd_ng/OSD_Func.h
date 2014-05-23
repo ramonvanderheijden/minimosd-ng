@@ -11,12 +11,14 @@ const char buf_Rule[36] = {
 void setHeadingPatern()
 {
   int start;
-  start = round((osd_heading * 24)/360);
+  start = round((osd_heading * 24) / 360);
   start -= 3;
-  if(start < 0) start += 24;
-  for(int x=0; x <= 10; x++){
+  if(start < 0)
+    start += 24;
+  for(int x = 0; x <= 10; x++) {
     buf_show[x] = buf_Rule[start];
-    if(++start > 23) start = 0;
+    if(++start > 23)
+      start = 0;
   }
   buf_show[7] = '\0';
 }
@@ -96,9 +98,7 @@ void setHomeVars(OSD &osd)
     if(bearing < 0) bearing += 360; //normalization
     osd_home_direction = round((float)(bearing/360.0f) * 16.0f) + 1;//array of arrows =)
     if(osd_home_direction > 16) osd_home_direction = 0;
-
   }
-
 }
 #endif
 #ifdef MINIMOSD_COPTER
@@ -203,17 +203,4 @@ void setFdataVars(){
   }
 }
 #endif
-
-
-void checkModellType(){
-#ifdef MINIMOSD_PLANE
-  if (EEPROM.read(MODELL_TYPE_ADD) != 0) EEPROM.write(MODELL_TYPE_ADD, 0);
-#endif
-#ifdef MINIMOSD_COPTER
-  if (EEPROM.read(MODELL_TYPE_ADD) != 1) EEPROM.write(MODELL_TYPE_ADD, 1);
-#endif
-  if (EEPROM.read(FW_VERSION1_ADDR) != 2) EEPROM.write(FW_VERSION1_ADDR, 2);
-  if (EEPROM.read(FW_VERSION2_ADDR) != 4) EEPROM.write(FW_VERSION2_ADDR, 4);
-  if (EEPROM.read(FW_VERSION3_ADDR) != 1) EEPROM.write(FW_VERSION3_ADDR, 1);
-}
 

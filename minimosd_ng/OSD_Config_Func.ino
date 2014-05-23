@@ -395,3 +395,13 @@ void updateSettings(byte panelu, byte panel_x, byte panel_y, byte panel_s )
   } 
 }
 
+
+void update_id()
+{
+  if (readEEPROM(MODELL_TYPE_ADD) != MINIMOSD_TYPE_ID)
+    writeEEPROM(MINIMOSD_TYPE_ID, MODELL_TYPE_ADD);
+  if (readEEPROM(FW_VERSION1_ADDR) != VERSION_MAJOR)
+    writeEEPROM(VERSION_MAJOR, FW_VERSION1_ADDR);
+  if (readEEPROM(FW_VERSION2_ADDR) != VERSION_MINOR)
+    writeEEPROM(VERSION_MINOR, FW_VERSION2_ADDR);
+}
