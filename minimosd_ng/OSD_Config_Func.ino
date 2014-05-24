@@ -374,13 +374,13 @@ void readPanelSettings()
 
 int checkPAL(int line)
 {
-  if(line >= osd.getCenter() && osd.getMode() == 0){
+  if(line >= osd.getCenter() && osd.getMode() == 0) {
     line -= 3;//Cutting lines offset after center if NTSC
   }
   return line;
 }
 
-void updateSettings(byte panelu, byte panel_x, byte panel_y, byte panel_s )
+void updateSettings(byte panelu, byte panel_x, byte panel_y, byte panel_s)
 {
   if(panel >= 1 && panel <= 32) {
     writeEEPROM(panel_s, (6 * panelu) - 6 + 0);
@@ -392,7 +392,7 @@ void updateSettings(byte panelu, byte panel_x, byte panel_y, byte panel_s )
     readSettings();
     for(panel = 0; panel < npanels; panel++)
       readPanelSettings();
-  } 
+  }
 }
 
 
