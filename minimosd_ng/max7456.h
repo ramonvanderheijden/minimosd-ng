@@ -77,8 +77,6 @@ class OSD: public BetterStream
     void openPanel(void);
     void closePanel(void);
     void control(uint8_t ctrl);
-    void detectMode(void);
-    void setMode(uint8_t mode);
     void setBrightness();
     void openSingle(uint8_t x, uint8_t y);
     uint8_t getMode(void);

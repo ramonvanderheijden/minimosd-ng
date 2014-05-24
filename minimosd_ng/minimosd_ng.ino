@@ -119,7 +119,6 @@ void setup()
 #endif
 
   // Prepare OSD for displaying 
-  digitalWrite(MAX7456_SELECT,  HIGH);
   osd.init();
 
   // Start

@@ -14,6 +14,9 @@
 #include "spi.h"
 #include "OSD_Config.h"
 
+/* If defined, mode autodetection will be used instead of setting */
+//#define AUTO_DETECT_MODE
+
 volatile int16_t x;
 volatile int font_count;
 volatile byte character_bitmap[0x40];
@@ -26,23 +29,49 @@ OSD::OSD()
 
 void OSD::init()
 {
+  uint8_t reg;
+
+  /* set chip select as output */ 
   pinMode(MAX7456_SELECT,OUTPUT);
+  /* set vsync as input */
   pinMode(MAX7456_VSYNC, INPUT);
-  digitalWrite(MAX7456_VSYNC,HIGH); //enabling pull-up resistor
+  /* enable pull resistor (vsync is an open-drain output)  */
+  digitalWrite(MAX7456_VSYNC, HIGH);
+  /* enable CS */
   digitalWrite(MAX7456_SELECT,LOW);
 
-  detectMode();
+#ifdef AUTO_DETECT_MODE
+  /* read STAT register and try to auto detect mode */
+  Spi.transfer(MAX7456_STAT_reg_read);
+  reg = Spi.transfer(0xff);
 
-  //read black level register
+  if (reg & 0x3) {
+    /* mode detected */
+    reg &= 0x01;
+  } else
+#endif
+  {
+    reg = EEPROM.read(PAL_NTSC_ADDR) & 0x01;
+  }
+
+  if (reg == NTSC) {
+    video_mode = MAX7456_MODE_MASK_NTSC;
+    video_center = MAX7456_CENTER_NTSC;
+  } else {
+    video_mode = MAX7456_MODE_MASK_PAL;
+    video_center = MAX7456_CENTER_PAL;
+  }
+
+  /* read black level register */
   Spi.transfer(MAX7456_OSDBL_reg_read);//black level read register
-  byte osdbl_r = Spi.transfer(0xff);
+  reg = Spi.transfer(0xff);
   Spi.transfer(MAX7456_VM0_reg);
   Spi.transfer(MAX7456_RESET | video_mode);
   delay(50);
   //set black level
-  byte osdbl_w = (osdbl_r & 0xef); //Set bit 4 to zero 11101111
+  reg &= 0xef; //Set bit 4 to zero 11101111
   Spi.transfer(MAX7456_OSDBL_reg); //black level write register
-  Spi.transfer(osdbl_w);
+  Spi.transfer(reg);
 
   setBrightness();
   // define sync (auto,int,ext) and
@@ -50,57 +79,27 @@ void OSD::init()
   control(1);
 }
 
-//------------------ Detect Mode (PAL/NTSC) ---------------------------------
-
-void OSD::detectMode()
-{
-  uint8_t osdstat_r;
-  
-  // read STAT and auto detect Mode PAL/NTSC
-  Spi.transfer(MAX7456_STAT_reg_read);
-  osdstat_r = Spi.transfer(0xff);
-
-  if (osdstat_r & 0x3) {
-    setMode(osdstat_r & 0x01);
-  } else {
-    setMode(EEPROM.read(PAL_NTSC_ADDR) & 0x01);
-  }
-}
 
 //------------------ Set Brightness  ---------------------------------
 void OSD::setBrightness()
 {
-    uint8_t blevel = EEPROM.read(OSD_BRIGHTNESS_ADDR);
+  uint8_t blevel = EEPROM.read(OSD_BRIGHTNESS_ADDR);
 
-    if(blevel == 0) //low brightness
-        blevel = MAX7456_WHITE_level_80;
-    else if(blevel == 1) 
-        blevel = MAX7456_WHITE_level_90;
-    else if(blevel == 2)
-        blevel = MAX7456_WHITE_level_100;
-    else if(blevel == 3) //high brightness
-        blevel = MAX7456_WHITE_level_120;
-    else 
-        blevel = MAX7456_WHITE_level_80; //low brightness if bad value
-    
-    // set all rows to same charactor white level, 90%
-    for (x = 0x0; x < 0x10; x++)
-    {
-        Spi.transfer(x + 0x10);
-        Spi.transfer(blevel);
-    }
-}
+  if(blevel == 0) //low brightness
+    blevel = MAX7456_WHITE_level_80;
+  else if(blevel == 1) 
+    blevel = MAX7456_WHITE_level_90;
+  else if(blevel == 2)
+    blevel = MAX7456_WHITE_level_100;
+  else if(blevel == 3) //high brightness
+    blevel = MAX7456_WHITE_level_120;
+  else 
+    blevel = MAX7456_WHITE_level_80; //low brightness if bad value
 
-//------------------ Set Mode (PAL/NTSC) ------------------------------------
-
-void OSD::setMode(uint8_t mode)
-{
-  if (mode == NTSC) {
-    video_mode = MAX7456_MODE_MASK_NTSC;
-    video_center = MAX7456_CENTER_NTSC;
-  } else {
-    video_mode = MAX7456_MODE_MASK_PAL;
-    video_center = MAX7456_CENTER_PAL;
+  // set all rows to same charactor white level, 90%
+  for (x = 0x0; x < 0x10; x++) {
+    Spi.transfer(x + 0x10);
+    Spi.transfer(blevel);
   }
 }
 
@@ -154,7 +153,7 @@ void OSD::openPanel(void)
   byte settings, char_address_hi, char_address_lo;
  
   //find [start address] position
-  linepos = row*30+col;
+  linepos = row * 30 + col;
   
   // divide 16 bits into hi & lo byte
   char_address_hi = linepos >> 8;
@@ -163,7 +162,7 @@ void OSD::openPanel(void)
   //Auto increment turn writing fast (less SPI commands).
   //No need to set next char address. Just send them
   settings = MAX7456_INCREMENT_auto; //To Enable DMM Auto Increment
-  digitalWrite(MAX7456_SELECT,LOW);
+  digitalWrite(MAX7456_SELECT, LOW);
   Spi.transfer(MAX7456_DMM_reg); //dmm
   Spi.transfer(settings);
 
@@ -285,15 +284,22 @@ void OSD::write_NVM(int font_count, uint8_t *character_bitmap)
 
 //------------------ pure virtual ones (just overriding) ---------------------
 
-int  OSD::available(void){
+int  OSD::available(void)
+{
   return 0;
 }
-int  OSD::read(void){
+
+int  OSD::read(void)
+{
   return 0;
 }
-int  OSD::peek(void){
+
+int  OSD::peek(void)
+{
   return 0;
 }
-void OSD::flush(void){
+
+void OSD::flush(void)
+{
 }
 
