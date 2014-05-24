@@ -118,7 +118,7 @@ void setup()
   Serial.println(freeMem());
 #endif
 
-  // Prepare OSD for displaying 
+  // Prepare OSD for displaying
   osd.init();
 
   // Start
