@@ -41,11 +41,10 @@ void read_mavlink(){
             } else {
                 crlf_count = 0;
             }
-#ifdef MINIMOSD_COPTER
             if (crlf_count == 3) {
+                osd.clear();
                 uploadFont();
             }
-#endif
         }
 
         //trying to grab msg  
