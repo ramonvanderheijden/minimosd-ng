@@ -1217,32 +1217,32 @@ void panHomeDir(int first_col, int first_line){
 // Size   : 1 x 2  (rows x chars)
 // Status : done
 
-void panFlightMode(int first_col, int first_line){
+void panFlightMode(int first_col, int first_line)
+{
+    char* mode_str = "";
+
     osd.setPanel(first_col, first_line);
     osd.openPanel();
 #ifdef MINIMOSD_PLANE
     //char c1 = 0x7f ;//"; char c2; char c3; char c4; char c5; 
-    char* mode_str="";
     if (osd_mode == 0) mode_str = "manu"; //Manual 
-    if (osd_mode == 1) mode_str = "circ"; //CIRCLE 
-    if (osd_mode == 2) mode_str = "stab"; //Stabilize
-    if (osd_mode == 3) mode_str = "trai"; //Training
-    if (osd_mode == 4) mode_str = "acro"; //ACRO
-    if (osd_mode == 5) mode_str = "fbwa"; //FLY_BY_WIRE_A
-    if (osd_mode == 6) mode_str = "fbwb"; //FLY_BY_WIRE_B
-    if (osd_mode == 7) mode_str = "cruz"; //Cruise
-    if (osd_mode == 10) mode_str = "auto"; //AUTO
-    if (osd_mode == 11) mode_str = "retl"; //Return to Launch 
-    if (osd_mode == 12) mode_str = "loit"; //Loiter
-    if (osd_mode == 15) mode_str = "guid"; //GUIDED
-    
+    else if (osd_mode == 1) mode_str = "circ"; //CIRCLE
+    else if (osd_mode == 2) mode_str = "stab"; //Stabilize
+    else if (osd_mode == 3) mode_str = "trai"; //Training
+    else if (osd_mode == 4) mode_str = "acro"; //ACRO
+    else if (osd_mode == 5) mode_str = "fbwa"; //FLY_BY_WIRE_A
+    else if (osd_mode == 6) mode_str = "fbwb"; //FLY_BY_WIRE_B
+    else if (osd_mode == 7) mode_str = "cruz"; //Cruise
+    else if (osd_mode == 10) mode_str = "auto"; //AUTO
+    else if (osd_mode == 11) mode_str = "retl"; //Return to Launch
+    else if (osd_mode == 12) mode_str = "loit"; //Loiter
+    else if (osd_mode == 15) mode_str = "guid"; //GUIDED
     
 //    osd.printf("%c%s", 0x7f, mode_str);
     osd.printf("%s", mode_str);
 #endif
 #ifdef MINIMOSD_COPTER
     //char c1 = 0xE0 ;//"; char c2; char c3; char c4; char c5; 
-    char* mode_str="";
     if (osd_mode == 0) mode_str = "stab"; //Stabilize
     else if (osd_mode == 1) mode_str = "acro"; //Acrobatic
     else if (osd_mode == 2) mode_str = "alth"; //Alt Hold
