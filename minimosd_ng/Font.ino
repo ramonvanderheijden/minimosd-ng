@@ -1,12 +1,13 @@
 
 void uploadFont()
 {
-  unsigned char bit_count, byte_count = 0, r;
+#ifdef FONT_UPDATABLE
+  unsigned char bit_count = 0, byte_count = 0, r;
   unsigned int font_count = 0;
   unsigned char character_bitmap[64];
 
   /* ready to receive data */
-  Serial.printf_P(PSTR("RFF\n"));
+  Serial.printf_P(PSTR("Ready for Font\n"));
 
   while(font_count < 256) {
     r = Serial.read();
@@ -34,8 +35,9 @@ void uploadFont()
         osd.write_NVM(font_count, character_bitmap);  
         byte_count = 0;
         font_count++;
-        Serial.printf_P(PSTR("CD\n"));
+        Serial.printf_P(PSTR("Char Done\n"));
     }
   }
+#endif
 }
 

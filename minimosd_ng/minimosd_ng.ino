@@ -35,24 +35,24 @@ along with this program. If not, see <http://www.gnu.org/licenses/>
 
 */
 
-/* ************************************************************ */
-/* **************** MAIN PROGRAM - MODULES ******************** */
-/* ************************************************************ */
+/* *************************************************/
+/* ***************** DEFINITIONS *******************/
 
-#undef PROGMEM 
-#define PROGMEM __attribute__(( section(".progmem.data") )) 
+/* MAVLink telemetry baud rate */
+#define TELEMETRY_SPEED  57600
 
-#undef PSTR 
-#define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
+/* Delay to wait for user actions */
+#define BOOTTIME         2000
 
-#define VERSION_MAJOR 0
-#define VERSION_MINOR 1
-
-/* Define your type of OSD here */
+/* Define the type of OSD here */
 #define MINIMOSD_PLANE
 //#define MINIMOSD_COPTER
 
+/* undefining this will make osd fonts not updatable */
+#define FONT_UPDATABLE
 
+//#define membug 
+//#define FORCEINIT  // You should never use this unless you know what you are doing 
 
 #if defined(MINIMOSD_PLANE)
 #define MINIMOSD_TYPE_ID 0
@@ -60,12 +60,17 @@ along with this program. If not, see <http://www.gnu.org/licenses/>
 #define MINIMOSD_TYPE_ID 1
 #endif
 
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 1
+
+#undef PROGMEM
+#define PROGMEM __attribute__(( section(".progmem.data") ))
+
+#undef PSTR
+#define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];}))
+
 /* **********************************************/
 /* ***************** INCLUDES *******************/
-
-//#define membug 
-//#define FORCEINIT  // You should never use this unless you know what you are doing 
-
 
 // AVR Includes
 #include <FastSerial.h>
@@ -93,15 +98,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>
 #include "OSD_Vars.h"
 #include "OSD_Func.h"
 
-/* *************************************************/
-/* ***************** DEFINITIONS *******************/
-
-#define TELEMETRY_SPEED  57600  // How fast our MAVLink telemetry is coming to Serial port
-#define BOOTTIME         2000   // Time in milliseconds that we show boot loading bar and wait user input
-
 // Objects and Serial definitions
 FastSerialPort0(Serial);
-OSD osd; //OSD object 
+OSD osd; // OSD object
 
 
 /* **********************************************/
@@ -110,7 +109,7 @@ OSD osd; //OSD object
 void setup() 
 {
   Serial.begin(TELEMETRY_SPEED);
-    
+
   // setup mavlink port
   mavlink_comm_0_port = &Serial;
 
