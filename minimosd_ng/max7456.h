@@ -4,8 +4,8 @@
 
 /******* FROM DATASHEET *******/
 
-#define MAX7456_SELECT 6//SS
-#define MAX7456_VSYNC 2//INT0
+#define MAX7456_CS    6 // SPI chip select
+#define MAX7456_VSYNC 2 // INT0
 
 #define NTSC 0
 #define PAL 1
