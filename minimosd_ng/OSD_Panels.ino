@@ -1,11 +1,3 @@
-/******* STARTUP PANEL *******/
-
-void startPanels(){
-    panLogo(); // Display our logo  
-    do_converts(); // load the unit conversion preferences
-}
-
-//------------------ Panel: Startup ArduCam OSD LOGO -------------------------------
 
 void panLogo(){
     osd.setPanel(5, 5);
