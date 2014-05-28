@@ -17,6 +17,8 @@
 /* If defined, mode autodetection will be used instead of setting */
 //#define AUTO_DETECT_MODE
 
+#define SPI_START 0x01
+#define SPI_END   0x02
 
 static void spi_init(void)
 {
@@ -33,11 +35,16 @@ static void spi_init(void)
 }
 
 
-unsigned char spi_transfer(unsigned char b)
+unsigned char spi_transfer(unsigned char b,
+      unsigned char cs_ctrl)
 {
+  if (cs_ctrl & SPI_START)
+    digitalWrite(MAX7456_CS, LOW);
   SPDR = b;
   while (!(SPSR & (1<<SPIF)));
-  return b;
+  if (cs_ctrl & SPI_END)
+    digitalWrite(MAX7456_CS, HIGH);
+  return SPDR;
 }
 
 
@@ -60,39 +67,35 @@ void OSD::init()
   /* enable pull resistor (vsync is an open-drain output) */
   digitalWrite(MAX7456_VSYNC, HIGH);
 
-  digitalWrite(MAX7456_CS, LOW);
 #ifdef AUTO_DETECT_MODE
   /* read STAT register and try to auto detect mode */
-  spi_transfer(MAX7456_STAT_reg_read);
-  reg = spi_transfer(0xff);
-
-  if (reg & 0x3) {
+  spi_transfer(MAX7456_STAT_reg_read, SPI_START);
+  video_mode = spi_transfer(0xff, SPI_END);
+  if (video_mode & 0x3) {
     /* mode detected */
-    reg &= 0x01;
+    video_mode &= 0x01;
   } else
 #endif
   {
-    reg = EEPROM.read(PAL_NTSC_ADDR) & 0x01;
+    video_mode = EEPROM.read(PAL_NTSC_ADDR) & 0x01;
+    video_mode <<= MAX7456_VIDEO_STD_BIT;
   }
 
-  if (reg == NTSC) {
-    video_mode = MAX7456_MODE_MASK_NTSC;
+  if (video_mode == 0)
     video_center = MAX7456_CENTER_NTSC;
-  } else {
-    video_mode = MAX7456_MODE_MASK_PAL;
+  else
     video_center = MAX7456_CENTER_PAL;
-  }
-
-  /* read black level register */
-  spi_transfer(MAX7456_OSDBL_reg_read);//black level read register
-  reg = spi_transfer(0xff);
-  spi_transfer(MAX7456_VM0_reg);
-  spi_transfer(MAX7456_RESET | video_mode);
+  
+  /* reset max7456 and set video mode */
+  spi_transfer(MAX7456_VM0_reg, SPI_START);
+  spi_transfer(MAX7456_RESET | video_mode, SPI_END);
   delay(50);
-  //set black level
-  reg &= 0xef; //Set bit 4 to zero 11101111
-  spi_transfer(MAX7456_OSDBL_reg); //black level write register
-  spi_transfer(reg);
+
+   /* set auto black level */
+  spi_transfer(MAX7456_OSDBL_reg_read, SPI_START);
+  reg = spi_transfer(0xff, SPI_END) & 0xef;
+  spi_transfer(MAX7456_OSDBL_reg, SPI_START);
+  spi_transfer(reg, SPI_END);
 
   setBrightness();
 
@@ -108,6 +111,9 @@ void OSD::setBrightness()
   uint8_t blevel = EEPROM.read(OSD_BRIGHTNESS_ADDR);
   unsigned char x;
 
+  blevel = 3 - (blevel & 0x3);
+
+#if 0
   if(blevel == 0) //low brightness
     blevel = MAX7456_WHITE_level_80;
   else if(blevel == 1) 
@@ -118,22 +124,23 @@ void OSD::setBrightness()
     blevel = MAX7456_WHITE_level_120;
   else 
     blevel = MAX7456_WHITE_level_80; //low brightness if bad value
+#endif
 
   // set all rows to same charactor white level, 90%
-  for (x = 0x0; x < 0x10; x++) {
-    spi_transfer(x + 0x10);
-    spi_transfer(blevel);
+  for (x = 0; x < 0x10; x++) {
+    spi_transfer(x + 0x10, SPI_START);
+    spi_transfer(blevel, SPI_END);
   }
 }
 
-//------------------ Get Mode (PAL 0/NTSC 1) --------------------------------
+//------------------ Get Mode --------------------------------
 
 uint8_t OSD::getMode()
 {
-  return (video_mode == MAX7456_MODE_MASK_NTSC) ? 0 : 1;
+  return (video_mode == 0) ? MAX7456_NTSC : MAX7456_PAL;
 }
 
-//------------------ Get Center (PAL/NTSC) ----------------------------------
+//------------------ Get Center ----------------------------------
 
 uint8_t OSD::getCenter()
 {
@@ -144,7 +151,7 @@ uint8_t OSD::getCenter()
 
 void OSD::plug()
 {
-  digitalWrite(MAX7456_CS,LOW);
+  digitalWrite(MAX7456_CS, LOW);
 }
 
 //------------------ clear ---------------------------------------------------
@@ -152,18 +159,14 @@ void OSD::plug()
 void OSD::clear()
 {
   // clear the screen
-  digitalWrite(MAX7456_CS,LOW);
-  spi_transfer(MAX7456_DMM_reg);
-  spi_transfer(MAX7456_CLEAR_display);
-  digitalWrite(MAX7456_CS,HIGH);
+  spi_transfer(MAX7456_DMM_reg, SPI_START);
+  spi_transfer(MAX7456_CLEAR_display, SPI_END);
 }
 
 //------------------ set panel -----------------------------------------------
 
 void OSD::setPanel(uint8_t st_col, uint8_t st_row)
 {
-  start_col = st_col;
-  start_row = st_row;
   col = st_col;
   row = st_row;
 }
@@ -172,65 +175,43 @@ void OSD::setPanel(uint8_t st_col, uint8_t st_row)
 
 void OSD::openPanel(void)
 {
-  unsigned int linepos;
-  byte settings, char_address_hi, char_address_lo;
- 
-  //find [start address] position
-  linepos = row * 30 + col;
-  
-  // divide 16 bits into hi & lo byte
-  char_address_hi = linepos >> 8;
-  char_address_lo = linepos;
+  unsigned short memaddr = row * 30 + col;
 
-  //Auto increment turn writing fast (less SPI commands).
-  //No need to set next char address. Just send them
-  settings = MAX7456_INCREMENT_auto; //To Enable DMM Auto Increment
-  digitalWrite(MAX7456_CS, LOW);
-  spi_transfer(MAX7456_DMM_reg); //dmm
-  spi_transfer(settings);
+  /* set auto increment on */
+  spi_transfer(MAX7456_DMM_reg, SPI_START);
+  spi_transfer(MAX7456_INCREMENT_auto, 0);
 
-  spi_transfer(MAX7456_DMAH_reg); // set start address high
-  spi_transfer(char_address_hi);
+  /* set start addr msb */
+  spi_transfer(MAX7456_DMAH_reg, 0);
+  spi_transfer((unsigned char) (memaddr >> 8), 0);
 
-  spi_transfer(MAX7456_DMAL_reg); // set start address low
-  spi_transfer(char_address_lo);
-  //Serial.printf("setPos -> %d %d\n", col, row);
-
+  /* set start addr lsb */
+  spi_transfer(MAX7456_DMAL_reg, 0);
+  spi_transfer((unsigned char) memaddr, 0);
 }
 
 //------------------ close panel ---------------------------------------------
 
 void OSD::closePanel(void)
 {  
-  spi_transfer(MAX7456_DMDI_reg);
-  spi_transfer(MAX7456_END_string); //This is needed "trick" to finish auto increment
-  digitalWrite(MAX7456_CS,HIGH);
-  //Serial.println("close");
-  row++; //only after finish the auto increment the new row will really act as desired
+  spi_transfer(MAX7456_DMDI_reg, 0);
+  spi_transfer(MAX7456_END_string, SPI_END);
+  row++;
 }
 
 //------------------ write single char ---------------------------------------------
 
 void OSD::openSingle(uint8_t x, uint8_t y)
 {
-  unsigned int linepos;
-  byte char_address_hi, char_address_lo;
- 
-  //find [start address] position
-  linepos = y*30+x;
-  
-  // divide 16 bits into hi & lo byte
-  char_address_hi = linepos >> 8;
-  char_address_lo = linepos;
-  
-  digitalWrite(MAX7456_CS,LOW);
-  
-  spi_transfer(MAX7456_DMAH_reg); // set start address high
-  spi_transfer(char_address_hi);
+  unsigned short memaddr = y * 30 + x;
 
-  spi_transfer(MAX7456_DMAL_reg); // set start address low
-  spi_transfer(char_address_lo);
-  //Serial.printf("setPos -> %d %d\n", col, row);
+  /* send start address msb */
+  spi_transfer(MAX7456_DMAH_reg, SPI_START);
+  spi_transfer((unsigned char) (memaddr >> 8), 0);
+
+  /* set start address lsb */
+  spi_transfer(MAX7456_DMAL_reg, 0);
+  spi_transfer((unsigned char) memaddr, 0);
 }
 
 //------------------ write ---------------------------------------------------
@@ -242,8 +223,8 @@ size_t OSD::write(uint8_t c)
     openPanel(); //It does all needed to re-enable auto increment
   }
   else{
-    spi_transfer(MAX7456_DMDI_reg);
-    spi_transfer(c);
+    spi_transfer(MAX7456_DMDI_reg, 0);
+    spi_transfer(c, 0);
   }
   return 1;
 }
@@ -252,59 +233,53 @@ size_t OSD::write(uint8_t c)
 
 void OSD::control(uint8_t ctrl)
 {
-  digitalWrite(MAX7456_CS,LOW);
-  spi_transfer(MAX7456_VM0_reg);
+  unsigned char b;
+  
+  spi_transfer(MAX7456_VM0_reg, SPI_START);
   switch(ctrl){
     case 0:
-      spi_transfer(MAX7456_DISABLE_display | video_mode);
+      b = MAX7456_DISABLE_display | video_mode;
       break;
     case 1:
-      //spi_transfer((MAX7456_ENABLE_display_vert | video_mode) | MAX7456_SYNC_internal);
-      //spi_transfer((MAX7456_ENABLE_display_vert | video_mode) | MAX7456_SYNC_external);
-
-      spi_transfer((MAX7456_ENABLE_display_vert | video_mode) | MAX7456_SYNC_autosync); 
+      /* sync modes available: auto, external and internal */
+      b = MAX7456_ENABLE_display_vert | video_mode | MAX7456_SYNC_autosync; 
       break;
   }
-  digitalWrite(MAX7456_CS,HIGH);
+  spi_transfer(b, SPI_END);
 }
 
-void OSD::write_NVM(int font_count, uint8_t *character_bitmap)
+void OSD::write_NVM(int memaddr, uint8_t *character_bitmap)
 {
-  byte x;
-  byte char_address_hi, char_address_lo;
-  byte screen_char;
+  unsigned char i, *p = character_bitmap;
 
-  char_address_hi = font_count;
-  char_address_lo = 0;
- //Serial.println("write_new_screen");   
+  /* disable display */
+  spi_transfer(MAX7456_VM0_reg, SPI_START); 
+  spi_transfer(MAX7456_DISABLE_display, 0);
 
-  // disable display
-  digitalWrite(MAX7456_CS,LOW);
-  spi_transfer(MAX7456_VM0_reg); 
-  spi_transfer(MAX7456_DISABLE_display);
+  /* set address msb */
+  spi_transfer(MAX7456_CMAH_reg, 0);
+  spi_transfer(memaddr, 0);
 
-  spi_transfer(MAX7456_CMAH_reg); // set start address high
-  spi_transfer(char_address_hi);
-
-  for(x = 0; x < NVM_ram_size; x++) // write out 54 (out of 64) bytes of character to shadow ram
-  {
-    screen_char = character_bitmap[x];
-    spi_transfer(MAX7456_CMAL_reg); // set start address low
-    spi_transfer(x);
-    spi_transfer(MAX7456_CMDI_reg);
-    spi_transfer(screen_char);
+  /* send 54 bytes */
+  for(i = 0; i < NVM_ram_size; i++) {
+    /* set address lsb */
+    spi_transfer(MAX7456_CMAL_reg, 0);
+    spi_transfer(i, 0);
+    /* send byte */
+    spi_transfer(MAX7456_CMDI_reg, 0);
+    spi_transfer(*p++, 0);
   }
 
-  // transfer a 54 bytes from shadow ram to NVM
-  spi_transfer(MAX7456_CMM_reg);
-  spi_transfer(WRITE_nvr);
+  /* write data to eeprom */
+  spi_transfer(MAX7456_CMM_reg, 0);
+  spi_transfer(WRITE_nvr, 0);
   
-  // wait until bit 5 in the status register returns to 0 (12ms)
-  while ((spi_transfer(MAX7456_STAT_reg_read) & STATUS_reg_nvr_busy) != 0x00);
+  /* wait until done - bit 5 in the status register returns to 0 (12ms) */
+  while (spi_transfer(MAX7456_STAT_reg_read, 0) & STATUS_reg_nvr_busy);
 
-  spi_transfer(MAX7456_VM0_reg); // turn on screen next vertical
-  spi_transfer(MAX7456_ENABLE_display_vert);
-  digitalWrite(MAX7456_CS,HIGH);  
+  /* turn on display on the next vertical sync */
+  spi_transfer(MAX7456_VM0_reg, 0);
+  spi_transfer(MAX7456_ENABLE_display_vert, SPI_END);
 }
 
 //------------------ pure virtual ones (just overriding) ---------------------

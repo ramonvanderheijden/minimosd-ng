@@ -7,12 +7,11 @@
 #define MAX7456_CS    6 // SPI chip select
 #define MAX7456_VSYNC 2 // INT0
 
-#define NTSC 0
-#define PAL 1
-#define MAX7456_MODE_MASK_PAL 0x40 //PAL mask 01000000
-#define MAX7456_CENTER_PAL 0x8
+#define MAX7456_NTSC 0
+#define MAX7456_PAL  1
 
-#define MAX7456_MODE_MASK_NTSC 0x00 //NTSC mask 00000000 ("|" will do nothing)
+#define MAX7456_VIDEO_STD_BIT 6
+#define MAX7456_CENTER_PAL 0x8
 #define MAX7456_CENTER_NTSC 0x6
 
 //MAX7456 reg read addresses
@@ -89,7 +88,7 @@ class OSD: public BetterStream
     void write_NVM(int font_count, uint8_t *character_bitmap);
     using BetterStream::write;
   private:
-    uint8_t start_col, start_row, col, row, video_mode, video_center;
+    uint8_t col, row, video_mode, video_center;
 };
 
 #endif
