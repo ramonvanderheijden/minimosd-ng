@@ -53,7 +53,7 @@ N/Y = Not Yet working<br>
 N/C = Not Confirmed<br>
 <br>
 Screen sizes: <br>
-PAL   15 Rows x 32 Chars<br>
+PAL   16 Rows x 30 Chars<br>
 NTSC  13 Rows x 30 Chars<br>
  <br>
 <br>
