@@ -1,43 +1,29 @@
-
 void uploadFont()
 {
-#ifdef FONT_UPDATABLE
-  unsigned char bit_count = 0, byte_count = 0, r;
-  unsigned int font_count = 0;
-  unsigned char character_bitmap[64];
+  unsigned char csum, i, ch = 0;
+  unsigned char buf[64];
+  const uint8_t ok[] = {'O', 'K', '\n'};
+  int r;
+  
+  /* send ok to flag data receive ready */
+  Serial.write(ok, 3);
 
-  /* ready to receive data */
-  Serial.printf_P(PSTR("Ready for Font\n"));
-
-  while(font_count < 256) {
-    r = Serial.read();
-    switch(r) {
-      case 0x0d: // CR
-        //Serial.println("cr");
-        if (bit_count == 8) {
-          byte_count++;
-          character_bitmap[byte_count] = 0;
-        }
-        bit_count = 0;
-        break;
-      case '0':
-      case '1':
-        character_bitmap[byte_count] <<= 1;
-        character_bitmap[byte_count] |= (r & 0x01);
-        bit_count++;
-        break;
-      default:
-        break;
+  /* expect 256 chars */
+  /* using do {} while to avoid using and integer for counting */
+  do {
+    csum = 0;
+    /* expect 64 bytes per char although only 56 are useful */
+    for (i = 0; i < 64; i++) {
+      do { r = Serial.read(); } while (r == -1);
+      buf[i] = (unsigned char) r;
+      csum += (unsigned char) r;
     }
-
-    /* write character to max7456 eeprom */
-    if(byte_count == 64) {
-        osd.write_NVM(font_count, character_bitmap);  
-        byte_count = 0;
-        font_count++;
-        Serial.printf_P(PSTR("Char Done\n"));
-    }
-  }
-#endif
+    
+    //osd.write_NVM(chrs, buf);
+    /* reply with the char index */
+    Serial.write(ch);
+    Serial.write(csum);
+  } while (++ch != 0);
+  Serial.write(ok, 3);
 }
 

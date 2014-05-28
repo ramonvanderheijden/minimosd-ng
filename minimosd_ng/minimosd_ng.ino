@@ -48,9 +48,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>
 #define MINIMOSD_PLANE
 //#define MINIMOSD_COPTER
 
-/* undefining this will make osd fonts not updatable */
-#define FONT_UPDATABLE
-
 //#define membug 
 //#define FORCEINIT  // You should never use this unless you know what you are doing 
 
@@ -120,9 +117,12 @@ void setup()
   // Prepare OSD for displaying
   osd.init();
 
-  // Start
-  startPanels();
-  delay(500);
+  /* display init screen */
+  panLogo();
+
+  /* load the unit conversion preferences */
+  do_converts(); 
+  //delay(500);
 
   // OSD debug for development (Shown at start)
 #ifdef membug
@@ -156,7 +156,7 @@ void setup()
 
   /* set panel to 0 to start in the first navigation screen */
   panel = 0;
-  delay(2000);
+  delay(1000);
   Serial.flush(); 
   // Startup MAVLink timers  
   //mavlinkTimer.Set(&OnMavlinkTimer, 120);

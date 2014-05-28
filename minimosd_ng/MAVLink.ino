@@ -3,7 +3,6 @@
 
 // true when we have received at least 1 MAVLink packet
 static bool mavlink_active;
-static uint8_t crlf_count = 0;
 
 static int packet_drops = 0;
 static int parse_error = 0;
@@ -28,23 +27,28 @@ void request_mavlink_rates()
 void read_mavlink(){
     mavlink_message_t msg; 
     mavlink_status_t status;
+    static unsigned char cnt = 0;
 
     //grabing data 
     while(Serial.available() > 0) { 
-        uint8_t c = Serial.read();
 
-        /* allow CLI to be started by hitting enter 3 times, if no
-        heartbeat packets have been received */
-        if (mavlink_active == 0 && millis() < 20000 && millis() > 5000) {
-            if (c == '\n' || c == '\r') {
-                crlf_count++;
-            } else {
-                crlf_count = 0;
-            }
-            if (crlf_count == 3) {
+        uint8_t c = Serial.read();
+        
+        /* start font upload
+           conditions:
+             - no mavlink heartbeats received
+             - receive 4 consecutive 0xfa bytes */
+        
+        if (mavlink_active == 0) {
+            if (c == 0xfa)
+                cnt++;
+            else
+                cnt = 0;
+
+            if (cnt == 4) {
                 osd.clear();
                 uploadFont();
-            }
+          }
         }
 
         //trying to grab msg  
@@ -193,7 +197,7 @@ osd_winddirection = mavlink_msg_wind_get_direction(&msg); // 0..360 deg, 0=north
                 break;
             }
         }
-        delayMicroseconds(138);
+        //delayMicroseconds(138);
         //next one
     }
     // Update global packet drops counter
