@@ -19,7 +19,7 @@ void uploadFont()
       csum += (unsigned char) r;
     }
     
-    osd.write_NVM(chrs, buf);
+    osd.write_NVM(ch, buf);
     /* reply with the char index */
     Serial.write(ch);
     Serial.write(csum);
