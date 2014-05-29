@@ -1,27 +1,8 @@
+#include "config.h"
+
+
 /* ******************************************************************/
 /* *********************** GENERAL FUNCTIONS ********************** */
-
-//Extract functions (get bits from the positioning bytes
-#define ISa(panel,whichBit) getBit(panA_REG[panel], whichBit)
-#define ISb(panel,whichBit) getBit(panB_REG[panel], whichBit)
-#define ISc(panel,whichBit) getBit(panC_REG[panel], whichBit)
-#define ISd(panel,whichBit) getBit(panD_REG[panel], whichBit)
-#define ISe(panel,whichBit) getBit(panE_REG[panel], whichBit)
-
-#define getBit(r, b) (r & (1 << b))
-/*boolean getBit(byte reg, byte b)
-{
-  return reg & (1 << b);
-}*/
-
-byte setBit(byte &r, byte b, boolean s)
-{
-  if (s)
-    r |= 1 << b;
-  else
-    r &= ~(1 << b);
-  return r;
-}
 
 byte readEEPROM(int address)
 {
@@ -40,28 +21,37 @@ void InitializeOSD()
 
   writeEEPROM(42, CHK1);
   writeEEPROM(VER-42,CHK2);
-  for(panel = 0; panel < npanels; panel++)
+  for(panel = 0; panel < NR_PANELS; panel++)
     writeSettings();
 
-#ifdef MINOMOSD_COPTER
   osd.setPanel(4,9);
   osd.openPanel();
   osd.printf_P(PSTR("OSD Initialized, reboot")); 
   osd.closePanel();
-#endif
+
   // run for ever so user resets 
   for(;;) {}
 }
 #endif
 
-// Write our latest FACTORY settings to EEPROM
-void writeSettings()
+/* Initialize OSD with the default settings */
+void writeSettings(unsigned char panel)
 {
-    // Writing all default parameters to EEPROM, ON = panel enabled  
-    // All panels have 3 values:
-    //  - Enable/Disable
-    //  - X coordinate on screen
-    //  - Y coordinate on screen
+  /* eeprom widget organization:
+     2 byte per widget
+     bits  [15] = enabled / disabled
+     bits[11:8] = Y coordinate
+     bits [4:0] = X coordinate */
+
+#if 0
+
+
+
+
+
+#else
+
+
     uint16_t offset = OffsetBITpanel * panel;
 //    writeEEPROM(off, panCenter_en_ADDR + offset);
 //    writeEEPROM(13, panCenter_x_ADDR + offset);
@@ -181,7 +171,7 @@ void writeSettings()
     writeEEPROM(0,stall_ADDR);
     writeEEPROM(100,battv_ADDR); //10Volts
     writeEEPROM(6,ch_toggle_ADDR);
-
+#endif
 }
 
 void readSettings()
@@ -212,164 +202,164 @@ void readSettings()
   char_call[i+1] ='\0'; //null terminate the string 
 }
 
-void readPanelSettings()
+#define WIDGET(id_, p_, en_, x_, y_, draw_)  { \
+  p_->widget[id_].cfg.en = en_; \
+  p_->widget[id_].cfg.x = x_; \
+  p_->widget[id_].cfg.y = y_; \
+  p_->widget[id_].draw = draw_; \
+  p_->widget[id_].visible = 1; \
+}
+  
+  
+
+void readPanelSettings(unsigned char panel)
 {
-    //****** First set of 8 Panels ******
-    uint16_t offset = OffsetBITpanel * panel;
+  struct panel_config *p = &panels[panel];
 
- //   setBit(panA_REG[panel], Cen_BIT, readEEPROM(panCenter_en_ADDR + offset));
- //   panCenter_XY[0][panel] = readEEPROM(panCenter_x_ADDR + offset);
- //   panCenter_XY[1][panel] = checkPAL(readEEPROM(panCenter_y_ADDR + offset));
+  //****** First set of 8 Panels ******
+  uint16_t offset = OffsetBITpanel * panel;
 
-    setBit(panA_REG[panel], Bp_BIT, readEEPROM(panBatteryPercent_en_ADDR + offset));
-    panBatteryPercent_XY[0][panel] = readEEPROM(panBatteryPercent_x_ADDR + offset);
-    panBatteryPercent_XY[1][panel] = checkPAL(readEEPROM(panBatteryPercent_y_ADDR + offset));
+  /* pitch widget */
+  WIDGET(WIDGET_PITCH_ID, p, readEEPROM(panPitch_en_ADDR + offset),
+          readEEPROM(panPitch_x_ADDR + offset), checkPAL(readEEPROM(panPitch_y_ADDR + offset)),
+          widget_draw_pitch);
 
-    setBit(panA_REG[panel], Pit_BIT, readEEPROM(panPitch_en_ADDR + offset));
-    panPitch_XY[0][panel] = readEEPROM(panPitch_x_ADDR + offset);
-    panPitch_XY[1][panel] = checkPAL(readEEPROM(panPitch_y_ADDR + offset));
+  /* roll widget */
+  WIDGET(WIDGET_ROLL_ID, p, readEEPROM(panRoll_en_ADDR + offset),
+          readEEPROM(panRoll_x_ADDR + offset), checkPAL(readEEPROM(panRoll_y_ADDR + offset)),
+          widget_draw_roll);
 
-    setBit(panA_REG[panel], Rol_BIT, readEEPROM(panRoll_en_ADDR + offset));
-    panRoll_XY[0][panel] = readEEPROM(panRoll_x_ADDR + offset);
-    panRoll_XY[1][panel] = checkPAL(readEEPROM(panRoll_y_ADDR + offset));
+  /* nr_gps_sats widget */
+  WIDGET(WIDGET_NRGPSSATS_ID, p, readEEPROM(panGPSats_en_ADDR + offset),
+          readEEPROM(panGPSats_x_ADDR + offset), checkPAL(readEEPROM(panGPSats_y_ADDR + offset)),
+          widget_draw_nrgpssats);
 
-    setBit(panA_REG[panel], BatA_BIT, readEEPROM(panBatt_A_en_ADDR + offset));
-    panBatt_A_XY[0][panel] = readEEPROM(panBatt_A_x_ADDR + offset);
-    panBatt_A_XY[1][panel] = checkPAL(readEEPROM(panBatt_A_y_ADDR + offset));
+  /* nr_gps_sats widget */
+  WIDGET(WIDGET_ALTITUDE_ID, p, readEEPROM(panAlt_en_ADDR + offset),
+          readEEPROM(panAlt_x_ADDR + offset), checkPAL(readEEPROM(panAlt_y_ADDR + offset)),
+          widget_draw_altitude);
 
-    //setBit(panA_REG, BatB_BIT, readEEPROM(panBatt_B_en_ADDR));
-    //panBatt_B_XY[0] = readEEPROM(panBatt_B_x_ADDR);
-    //panBatt_B_XY[1] = checkPAL(readEEPROM(panBatt_B_y_ADDR));
+  /* battery widget */
+  WIDGET(WIDGET_BATTERY_ID, p, readEEPROM(panBatt_A_en_ADDR + offset),
+          readEEPROM(panBatt_A_x_ADDR + offset), checkPAL(readEEPROM(panBatt_A_y_ADDR + offset)),
+          widget_draw_battery);
 
-    setBit(panA_REG[panel], GPSats_BIT, readEEPROM(panGPSats_en_ADDR + offset));
-    panGPSats_XY[0][panel] = readEEPROM(panGPSats_x_ADDR + offset);
-    panGPSats_XY[1][panel] = checkPAL(readEEPROM(panGPSats_y_ADDR + offset));
+  WIDGET(WIDGET_BATTERYPERCENT_ID, p, readEEPROM(panBatteryPercent_en_ADDR + offset),
+          readEEPROM(panBatteryPercent_x_ADDR + offset), checkPAL(readEEPROM(panBatteryPercent_y_ADDR + offset)),
+          widget_draw_batterypercent);
 
-    setBit(panA_REG[panel], COG_BIT, readEEPROM(panCOG_en_ADDR + offset));
-    panCOG_XY[0][panel] = readEEPROM(panCOG_x_ADDR + offset);
-    panCOG_XY[1][panel] = checkPAL(readEEPROM(panCOG_y_ADDR + offset));
+  WIDGET(WIDGET_GPSCOORD_ID, p, readEEPROM(panGPS_en_ADDR + offset),
+          readEEPROM(panGPS_x_ADDR + offset), checkPAL(readEEPROM(panGPS_y_ADDR + offset)),
+          widget_draw_gpscoord);
 
-    setBit(panA_REG[panel], GPS_BIT, readEEPROM(panGPS_en_ADDR + offset));
-    panGPS_XY[0][panel] = readEEPROM(panGPS_x_ADDR + offset);
-    panGPS_XY[1][panel] = checkPAL(readEEPROM(panGPS_y_ADDR + offset));
+  WIDGET(WIDGET_COG_ID, p, readEEPROM(panCOG_en_ADDR + offset),
+          readEEPROM(panCOG_x_ADDR + offset), checkPAL(readEEPROM(panCOG_y_ADDR + offset)),
+          widget_draw_cog);
 
-    //****** Second set of 8 Panels ******
+  WIDGET(WIDGET_CURRENT_ID, p, readEEPROM(panCur_A_en_ADDR + offset),
+          readEEPROM(panCur_A_x_ADDR + offset), checkPAL(readEEPROM(panCur_A_y_ADDR + offset)),
+          widget_draw_current);
 
-    setBit(panB_REG[panel], Rose_BIT, readEEPROM(panRose_en_ADDR + offset));
-    panRose_XY[0][panel] = readEEPROM(panRose_x_ADDR + offset);
-    panRose_XY[1][panel] = checkPAL(readEEPROM(panRose_y_ADDR + offset));
+  WIDGET(WIDGET_ROSE_ID, p, readEEPROM(panRose_en_ADDR + offset),
+          readEEPROM(panRose_x_ADDR + offset), checkPAL(readEEPROM(panRose_y_ADDR + offset)),
+          widget_draw_rose);
 
-    setBit(panB_REG[panel], Head_BIT, readEEPROM(panHeading_en_ADDR + offset));
-    panHeading_XY[0][panel] = readEEPROM(panHeading_x_ADDR + offset);
-    panHeading_XY[1][panel] = checkPAL(readEEPROM(panHeading_y_ADDR + offset));
+  WIDGET(WIDGET_HEADING_ID, p, readEEPROM(panHeading_en_ADDR + offset),
+          readEEPROM(panHeading_x_ADDR + offset), checkPAL(readEEPROM(panHeading_y_ADDR + offset)),
+          widget_draw_heading);
 
-//    setBit(panB_REG[panel], MavB_BIT, readEEPROM(panMavBeat_en_ADDR + offset));
-//    panMavBeat_XY[0][panel] = readEEPROM(panMavBeat_x_ADDR + offset);
-//    panMavBeat_XY[1][panel] = checkPAL(readEEPROM(panMavBeat_y_ADDR + offset));
+  WIDGET(WIDGET_HOMEDISTANCE_ID, p, readEEPROM(panHomeDis_en_ADDR + offset),
+          readEEPROM(panHomeDis_x_ADDR + offset), checkPAL(readEEPROM(panHomeDis_y_ADDR + offset)),
+          widget_draw_homedistance);
 
-    setBit(panB_REG[panel], HDis_BIT, readEEPROM(panHomeDis_en_ADDR + offset));
-    panHomeDis_XY[0][panel] = readEEPROM(panHomeDis_x_ADDR + offset);
-    panHomeDis_XY[1][panel] = checkPAL(readEEPROM(panHomeDis_y_ADDR + offset));
+  WIDGET(WIDGET_HOMEDIRECTION_ID, p, readEEPROM(panHomeDir_en_ADDR + offset),
+          readEEPROM(panHomeDir_x_ADDR + offset), checkPAL(readEEPROM(panHomeDir_y_ADDR + offset)),
+          widget_draw_homedirection);
+/*
+  WIDGET(WIDGET_WPDIRECTION_ID, p, readEEPROM(panWPDir_en_ADDR + offset),
+          readEEPROM(panWPDir_x_ADDR + offset), checkPAL(readEEPROM(panWPDir_y_ADDR + offset)),
+          widget_draw_wpdirection);
+*/
+  WIDGET(WIDGET_WPDISTANCE_ID, p, readEEPROM(panWPDis_en_ADDR + offset),
+          readEEPROM(panWPDis_x_ADDR + offset), checkPAL(readEEPROM(panWPDis_y_ADDR + offset)),
+          widget_draw_wpdistance);
 
-    setBit(panB_REG[panel], HDir_BIT, readEEPROM(panHomeDir_en_ADDR + offset));
-    panHomeDir_XY[0][panel] = readEEPROM(panHomeDir_x_ADDR + offset);
-    panHomeDir_XY[1][panel] = checkPAL(readEEPROM(panHomeDir_y_ADDR + offset));
+/*
+  WIDGET(WIDGET_WPDIRECTION_ID, p, readEEPROM(panMavBeat_en_ADDR + offset),
+          readEEPROM(panMavBeat_x_ADDR + offset), checkPAL(readEEPROM(panMavBeat_y_ADDR + offset)),
+          widget_draw_mavbeat);
+*/
 
-//    setBit(panB_REG[panel], WDir_BIT, readEEPROM(panWPDir_en_ADDR + offset));
-//    panWPDir_XY[0][panel] = readEEPROM(panWPDir_x_ADDR + offset);
-//    panWPDir_XY[1][panel] = checkPAL(readEEPROM(panWPDir_y_ADDR + offset));
+  WIDGET(WIDGET_TIME_ID, p, readEEPROM(panTime_en_ADDR + offset),
+          readEEPROM(panTime_x_ADDR + offset), checkPAL(readEEPROM(panTime_y_ADDR + offset)),
+          widget_draw_time);
 
-    setBit(panB_REG[panel], WDis_BIT, readEEPROM(panWPDis_en_ADDR + offset));
-    panWPDis_XY[0][panel] = readEEPROM(panWPDis_x_ADDR + offset);
-    panWPDis_XY[1][panel] = checkPAL(readEEPROM(panWPDis_y_ADDR + offset));
+  WIDGET(WIDGET_WARNING_ID, p, readEEPROM(panWarn_en_ADDR + offset),
+          readEEPROM(panWarn_x_ADDR + offset), checkPAL(readEEPROM(panWarn_y_ADDR + offset)),
+          widget_draw_warning);
 
-    setBit(panB_REG[panel], Time_BIT, readEEPROM(panTime_en_ADDR + offset));
-    panTime_XY[0][panel] = readEEPROM(panTime_x_ADDR + offset);
-    panTime_XY[1][panel] = checkPAL(readEEPROM(panTime_y_ADDR + offset));
+  WIDGET(WIDGET_RELATIVEALTITUDE_ID, p, readEEPROM(panHomeAlt_en_ADDR + offset),
+          readEEPROM(panHomeAlt_x_ADDR + offset), checkPAL(readEEPROM(panHomeAlt_y_ADDR + offset)),
+          widget_draw_relativealtitude);
 
-    //setBit(panB_REG, RSSI_BIT, readEEPROM(panRSSI_en_ADDR));
-    //panRSSI_XY[0] = readEEPROM(panRSSI_x_ADDR);
-    //panRSSI_XY[1] = checkPAL(readEEPROM(panRSSI_y_ADDR));
+  WIDGET(WIDGET_AIRSPEED_ID, p, readEEPROM(panAirSpeed_en_ADDR + offset),
+          readEEPROM(panAirSpeed_x_ADDR + offset), checkPAL(readEEPROM(panAirSpeed_y_ADDR + offset)),
+          widget_draw_airspeed);
 
-    //****** Third set of 8 Panels ******
+  WIDGET(WIDGET_GROUNDSPEED_ID, p, readEEPROM(panVel_en_ADDR + offset),
+          readEEPROM(panVel_x_ADDR + offset), checkPAL(readEEPROM(panVel_y_ADDR + offset)),
+          widget_draw_groundspeed);
 
-    setBit(panC_REG[panel], CurA_BIT, readEEPROM(panCur_A_en_ADDR + offset));
-    panCur_A_XY[0][panel] = readEEPROM(panCur_A_x_ADDR + offset);
-    panCur_A_XY[1][panel] = checkPAL(readEEPROM(panCur_A_y_ADDR + offset));
+  WIDGET(WIDGET_THROTTLE_ID, p, readEEPROM(panThr_en_ADDR + offset),
+          readEEPROM(panThr_x_ADDR + offset), checkPAL(readEEPROM(panThr_y_ADDR + offset)),
+          widget_draw_throttle);
 
-    //setBit(panC_REG, CurB_BIT, readEEPROM(panCur_B_en_ADDR));
-    //panCur_B_XY[0] = readEEPROM(panCur_B_x_ADDR);
-    //panCur_B_XY[1] = checkPAL(readEEPROM(panCur_B_y_ADDR));
+  WIDGET(WIDGET_FLIGHTMODE_ID, p, readEEPROM(panFMod_en_ADDR + offset),
+          readEEPROM(panFMod_x_ADDR + offset), checkPAL(readEEPROM(panFMod_y_ADDR + offset)),
+          widget_draw_flightmode);
 
-    setBit(panC_REG[panel], Alt_BIT, readEEPROM(panAlt_en_ADDR + offset));
-    panAlt_XY[0][panel] = readEEPROM(panAlt_x_ADDR + offset);
-    panAlt_XY[1][panel] = checkPAL(readEEPROM(panAlt_y_ADDR + offset));
+  WIDGET(WIDGET_HORIZON_ID, p, readEEPROM(panHorizon_en_ADDR + offset),
+          readEEPROM(panHorizon_x_ADDR + offset), checkPAL(readEEPROM(panHorizon_y_ADDR + offset)),
+          widget_draw_horizon);
 
-    setBit(panC_REG[panel], Halt_BIT, readEEPROM(panHomeAlt_en_ADDR + offset));
-    panHomeAlt_XY[0][panel] = readEEPROM(panHomeAlt_x_ADDR + offset);
-    panHomeAlt_XY[1][panel] = checkPAL(readEEPROM(panHomeAlt_y_ADDR + offset));
+  WIDGET(WIDGET_WINDSPEED_ID, p, readEEPROM(panWindSpeed_en_ADDR + offset),
+          readEEPROM(panWindSpeed_x_ADDR + offset), checkPAL(readEEPROM(panWindSpeed_y_ADDR + offset)),
+          widget_draw_windspeed);
 
-    setBit(panC_REG[panel], As_BIT, readEEPROM(panAirSpeed_en_ADDR + offset));
-    panAirSpeed_XY[0][panel] = readEEPROM(panAirSpeed_x_ADDR + offset);
-    panAirSpeed_XY[1][panel] = checkPAL(readEEPROM(panAirSpeed_y_ADDR + offset));
+  WIDGET(WIDGET_CLIMBRATE_ID, p, readEEPROM(panClimb_en_ADDR + offset),
+          readEEPROM(panClimb_x_ADDR + offset), checkPAL(readEEPROM(panClimb_y_ADDR + offset)),
+          widget_draw_climbrate);
 
-    setBit(panC_REG[panel], Vel_BIT, readEEPROM(panVel_en_ADDR + offset));
-    panVel_XY[0][panel] = readEEPROM(panVel_x_ADDR + offset);
-    panVel_XY[1][panel] = checkPAL(readEEPROM(panVel_y_ADDR + offset));
+  WIDGET(WIDGET_TUNE_ID, p, readEEPROM(panTune_en_ADDR + offset),
+          readEEPROM(panTune_x_ADDR + offset), checkPAL(readEEPROM(panTune_y_ADDR + offset)),
+          widget_draw_tune);
 
-    setBit(panC_REG[panel], Thr_BIT, readEEPROM(panThr_en_ADDR + offset));
-    panThr_XY[0][panel] = readEEPROM(panThr_x_ADDR + offset);
-    panThr_XY[1][panel] = checkPAL(readEEPROM(panThr_y_ADDR + offset));
+  WIDGET(WIDGET_RSSI_ID, p, readEEPROM(panRSSI_en_ADDR + offset),
+          readEEPROM(panRSSI_x_ADDR + offset), checkPAL(readEEPROM(panRSSI_y_ADDR + offset)),
+          widget_draw_rssi);
 
-    setBit(panC_REG[panel], FMod_BIT, readEEPROM(panFMod_en_ADDR + offset));
-    panFMod_XY[0][panel] = readEEPROM(panFMod_x_ADDR + offset);
-    panFMod_XY[1][panel] = checkPAL(readEEPROM(panFMod_y_ADDR + offset));
+  WIDGET(WIDGET_EFFICIENCY_ID, p, readEEPROM(panEff_en_ADDR + offset),
+          readEEPROM(panEff_x_ADDR + offset), checkPAL(readEEPROM(panEff_y_ADDR + offset)),
+          widget_draw_efficiency);
 
-    setBit(panC_REG[panel], Hor_BIT, readEEPROM(panHorizon_en_ADDR + offset));
-    panHorizon_XY[0][panel] = readEEPROM(panHorizon_x_ADDR + offset);
-    panHorizon_XY[1][panel] = checkPAL(readEEPROM(panHorizon_y_ADDR + offset));
+  WIDGET(WIDGET_CALLSIGN_ID, p, readEEPROM(panCALLSIGN_en_ADDR + offset),
+          readEEPROM(panCALLSIGN_x_ADDR + offset), checkPAL(readEEPROM(panCALLSIGN_y_ADDR + offset)),
+          widget_draw_callsign);
 
-    setBit(panD_REG[panel], Warn_BIT, readEEPROM(panWarn_en_ADDR + offset));
-    panWarn_XY[0][panel] = readEEPROM(panWarn_x_ADDR + offset);
-    panWarn_XY[1][panel] = checkPAL(readEEPROM(panWarn_y_ADDR + offset));
+  WIDGET(WIDGET_TEMPERATURE_ID, p, readEEPROM(panTemp_en_ADDR + offset),
+          readEEPROM(panTemp_x_ADDR + offset), checkPAL(readEEPROM(panTemp_y_ADDR + offset)),
+          widget_draw_temperature);
 
-    setBit(panD_REG[panel], WindS_BIT, readEEPROM(panWindSpeed_en_ADDR + offset));
-    panWindSpeed_XY[0][panel] = readEEPROM(panWindSpeed_x_ADDR + offset);
-    panWindSpeed_XY[1][panel] = checkPAL(readEEPROM(panWindSpeed_y_ADDR + offset));
+  WIDGET(WIDGET_DISTANCE_ID, p, readEEPROM(panDistance_en_ADDR + offset),
+          readEEPROM(panDistance_x_ADDR + offset), checkPAL(readEEPROM(panDistance_y_ADDR + offset)),
+          widget_draw_distance);
 
-    setBit(panD_REG[panel], Climb_BIT, readEEPROM(panClimb_en_ADDR + offset));
-    panClimb_XY[0][panel] = readEEPROM(panClimb_x_ADDR + offset);
-    panClimb_XY[1][panel] = checkPAL(readEEPROM(panClimb_y_ADDR + offset));
+/*
+  WIDGET(WIDGET_CHANNELS_ID, p, readEEPROM(panCh_en_ADDR + offset),
+          readEEPROM(panCh_x_ADDR + offset), checkPAL(readEEPROM(panCh_y_ADDR + offset)),
+          widget_draw_channels);
+*/
 
-#ifdef MINIMOSD_PLANE
-    setBit(panD_REG[panel], Tune_BIT, readEEPROM(panTune_en_ADDR + offset));
-    panTune_XY[0][panel] = readEEPROM(panTune_x_ADDR + offset);
-    panTune_XY[1][panel] = checkPAL(readEEPROM(panTune_y_ADDR + offset));
-#endif
-
-    setBit(panD_REG[panel], RSSI_BIT, readEEPROM(panRSSI_en_ADDR + offset));
-    panRSSI_XY[0][panel] = readEEPROM(panRSSI_x_ADDR + offset);
-    panRSSI_XY[1][panel] = checkPAL(readEEPROM(panRSSI_y_ADDR + offset));
-    
-    setBit(panD_REG[panel], Eff_BIT, readEEPROM(panEff_en_ADDR + offset));
-    panEff_XY[0][panel] = readEEPROM(panEff_x_ADDR + offset);
-    panEff_XY[1][panel] = checkPAL(readEEPROM(panEff_y_ADDR + offset));
-
-    setBit(panD_REG[panel], CALLSIGN_BIT, readEEPROM(panCALLSIGN_en_ADDR + offset));
-    panCALLSIGN_XY[0][panel] = readEEPROM(panCALLSIGN_x_ADDR + offset);
-    panCALLSIGN_XY[1][panel] = checkPAL(readEEPROM(panCALLSIGN_y_ADDR + offset));
-
-//   setBit(panE_REG[panel], Ch_BIT, readEEPROM(panCh_en_ADDR + offset));
-//    panCh_XY[0][panel] = readEEPROM(panCh_x_ADDR + offset);
-//    panCh_XY[1][panel] = checkPAL(readEEPROM(panCh_y_ADDR + offset));
-
-    setBit(panE_REG[panel], TEMP_BIT, readEEPROM(panTemp_en_ADDR + offset));
-    panTemp_XY[0][panel] = readEEPROM(panTemp_x_ADDR + offset);
-    panTemp_XY[1][panel] = checkPAL(readEEPROM(panTemp_y_ADDR + offset));
-
-    setBit(panE_REG[panel], DIST_BIT, readEEPROM(panDistance_en_ADDR + offset));
-    panDistance_XY[0][panel] = readEEPROM(panDistance_x_ADDR + offset);
-    panDistance_XY[1][panel] = checkPAL(readEEPROM(panDistance_y_ADDR + offset));
 }
 
 int checkPAL(int line)
@@ -390,8 +380,8 @@ void updateSettings(byte panelu, byte panel_x, byte panel_y, byte panel_s)
     }
     osd.clear();
     readSettings();
-    for(panel = 0; panel < npanels; panel++)
-      readPanelSettings();
+    for(panel = 0; panel < NR_PANELS; panel++)
+      readPanelSettings(panel);
   }
 }
 

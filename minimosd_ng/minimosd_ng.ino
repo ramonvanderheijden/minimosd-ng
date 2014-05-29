@@ -70,7 +70,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>
 /* ***************** INCLUDES *******************/
 
 // AVR Includes
-#include <FastSerial.h>
+#include "../FastSerial/FastSerial.h"
 #include <AP_Common.h>
 #include <AP_Math.h>
 #include <math.h>
@@ -94,6 +94,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>
 #include "max7456.h"
 #include "OSD_Vars.h"
 #include "OSD_Func.h"
+#include "config.h"
 
 // Objects and Serial definitions
 FastSerialPort0(Serial);
@@ -151,8 +152,8 @@ void setup()
 
   // Get correct panel settings from EEPROM
   readSettings();
-  for(panel = 0; panel < npanels; panel++)
-    readPanelSettings();
+  for(panel = 0; panel < NR_PANELS; panel++)
+    readPanelSettings(panel);
 
   /* set panel to 0 to start in the first navigation screen */
   panel = 0;
@@ -209,7 +210,7 @@ void OnMavlinkTimer()
 
   setHomeVars(osd);   // calculate and set Distance from home and Direction to home
 
-  writePanels();       // writing enabled panels (check OSD_Panels Tab)
+  render_panel();
   setFdataVars();
 }
 

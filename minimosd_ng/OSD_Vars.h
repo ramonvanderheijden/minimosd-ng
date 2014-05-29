@@ -1,5 +1,16 @@
+#ifndef OSD_VARS_H
+#define OSD_VARS_H
+
 /*Panels variables*/
 //Will come from APM telem port
+
+#if defined(ARDUINO) && ARDUINO >= 100
+#include "Arduino.h"
+#else
+#include "wiring.h"
+#endif
+
+#include "OSD_Config.h"
 
 static float        max_home_distance = 0;
 static float        max_osd_airspeed = 0;
@@ -58,11 +69,11 @@ static uint16_t     chan8_raw = 0;
 static uint8_t      ch_toggle = 0;
 static uint8_t      check_warning = 1;
 //static boolean      osd_set = 0;
-static boolean      switch_mode = 0;
+static bool      switch_mode = 0;
 #ifdef MINIMOSD_PLANE
-static boolean      takeofftime = 0;
+static bool      takeofftime = 0;
 #endif
-//static boolean      haltset = 0;
+//static boo      haltset = 0;
 //static boolean      pal_ntsc = 0;
 
 //static int8_t       setup_menu = 0;
@@ -124,8 +135,8 @@ static unsigned long runt = 0;
 
 //static uint8_t      warning_type = 0;
 static char*        warning_string;
-static boolean      warning_found = 0;
-static boolean      canswitch = 1;
+static bool      warning_found = 0;
+static bool      canswitch = 1;
 static uint8_t      osd_off_switch = 0;
 static uint8_t      osd_switch_last = 100;
 static uint8_t      rotation = 0;
@@ -168,7 +179,6 @@ static float        osd_alt_gps = 0;                    // altitude
 #endif
 static float        osd_airspeed = 0;              // airspeed
 static float        osd_windspeed = 0;
-static float        osd_windspeedz = 0;
 static float        osd_winddirection = 0;
 static int8_t       osd_wind_arrow_rotate_int;
 static int8_t       osd_COG_arrow_rotate_int;
@@ -203,7 +213,6 @@ static byte     climbchar = 0;
 //static byte     signLon = 0x20;
 
 
-static float     convertt = 0;
 //Call sign variables
 static char         char_call[OSD_CALL_SIGN_TOTAL+1] = {0};
 
@@ -223,67 +232,13 @@ static boolean      enable_mav_request = 0;
 static boolean      blinker = 0;
 static boolean      one_sec_timer_switch = 0;
 
-static const uint8_t npanels = 2;
 static uint8_t panel = 0; 
-// Panel BIT registers
-byte panA_REG[npanels] = {0b00000000};
-byte panB_REG[npanels] = {0b00000000};
-byte panC_REG[npanels] = {0b00000000};
-byte panD_REG[npanels] = {0b00000000};
-byte panE_REG[npanels] = {0b00000000};
 
 byte modeScreen = 0; //NTSC:0, PAL:1
 
 //byte SerCMD1 = 0;
 //byte SerCMD2 = 0;
 
-// First 8 panels and their X,Y coordinate holders
-//byte panCenter_XY[2][npanels]; // = { 13,7,0 };
-byte panPitch_XY[2][npanels]; // = { 11,1 };
-byte panRoll_XY[2][npanels]; // = { 23,7 };
-byte panBatt_A_XY[2][npanels]; // = { 23,1 };
-//byte panBatt_B_XY[2]; // = { 23,3 };
-byte panGPSats_XY[2][npanels]; // = { 2,12 };
-byte panCOG_XY[2][npanels]; // = { 2,11 };
-byte panGPS_XY[2][npanels]; // = { 2,13 };
-byte panBatteryPercent_XY[2][npanels];
-
-
-//Second 8 set of panels and their X,Y coordinate holders
-byte panRose_XY[2][npanels]; // = { 16,13 };
-byte panHeading_XY[2][npanels]; // = { 16,12 };
-//byte panMavBeat_XY[2][npanels]; // = { 2,10 };
-byte panHomeDir_XY[2][npanels]; // = { 0,0 };
-byte panHomeDis_XY[2][npanels]; // = { 0,0 };
-//byte panWPDir_XY[2][npanels]; // = { 27,12 };
-byte panWPDis_XY[2][npanels]; // = { 23,11 };
-byte panTime_XY[2][npanels];
-
-
-// Third set of panels and their X,Y coordinate holders
-byte panCur_A_XY[2][npanels]; // = { 23,1 };
-//byte panCur_B_XY[2]; // = { 23,3 };
-byte panAlt_XY[2][npanels]; // = { 0,0 };
-byte panHomeAlt_XY[2][npanels]; // = { 0,0 };
-byte panVel_XY[2][npanels]; // = { 0,0 };
-byte panAirSpeed_XY[2][npanels]; // = { 0,0 };
-byte panThr_XY[2][npanels]; // = { 0,0 };
-byte panFMod_XY[2][npanels]; // = { 0,0 };
-byte panHorizon_XY[2][npanels]; // = {8,centercalc}
-
-// Third set of panels and their X,Y coordinate holders
-byte panWarn_XY[2][npanels];
-byte panWindSpeed_XY[2][npanels];
-byte panClimb_XY[2][npanels];
-#ifdef MINIMOSD_PLANE
-byte panTune_XY[2][npanels];
-#endif
-byte panRSSI_XY[2][npanels];
-byte panEff_XY[2][npanels];
-byte panCALLSIGN_XY[2][npanels];
-// byte panCh_XY[2][npanels];
-byte panTemp_XY[2][npanels];
-byte panDistance_XY[2][npanels];
 
 //*************************************************************************************************************
 //rssi varables
@@ -294,3 +249,4 @@ static int16_t      rssi = -99; // scaled value 0-100%
 static uint8_t      rssiraw_on = 0; 
 static uint8_t      rssi_warn_level = 0;
 
+#endif

@@ -1,3 +1,6 @@
+#ifndef OSD_CONFIG_H
+#define OSD_CONFIG_H
+
 
 #define on 1
 #define off 0
@@ -13,52 +16,6 @@
 // int   = 4
 // float = 8
 
-// Panel 8bit REGISTER with BIT positions
-// panA_REG Byte has:
-//#define Cen_BIT        0
-#define Pit_BIT        1
-#define Rol_BIT        2
-#define BatA_BIT       3
-#define Bp_BIT         4
-#define GPSats_BIT     5
-#define COG_BIT        6
-#define GPS_BIT        7
-
-// panB_REG Byte has:
-#define Rose_BIT       0
-#define Head_BIT       1
-//#define MavB_BIT       2
-#define HDir_BIT       3
-#define HDis_BIT       4
-//#define WDir_BIT       5 //
-#define WDis_BIT       6 //
-#define Time_BIT       7 
-
-// panC_REG Byte has:
-#define CurA_BIT       0
-#define As_BIT         1
-#define Alt_BIT        2
-#define Vel_BIT        3
-#define Thr_BIT        4
-#define FMod_BIT       5
-#define Hor_BIT        6
-#define Halt_BIT       7
-
-// panD_REG Byte has:
-#define Warn_BIT       0
-#define Off_BIT        1
-#define WindS_BIT      2
-#define Climb_BIT      3
-#define Tune_BIT       4
-#define CALLSIGN_BIT   5
-#define RSSI_BIT       6
-#define Eff_BIT        7
-
-// panE_REG Byte has:
-
-//#define Ch_BIT         0
-#define TEMP_BIT       1
-#define DIST_BIT       2
 
 /* *********************************************** */
 // EEPROM Storage addresses
@@ -224,3 +181,5 @@
 
 
 #define EEPROM_MAX_ADDR 1024 // this is 328 chip
+
+#endif
