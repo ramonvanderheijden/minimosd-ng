@@ -1,5 +1,5 @@
   
-#include <FastSerial.h>
+#include "../FastSerial/FastSerial.h"
 
 // Get the common arduino functions
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -233,18 +233,15 @@ size_t OSD::write(uint8_t c)
 
 void OSD::control(uint8_t ctrl)
 {
-  unsigned char b;
+  unsigned char b = video_mode;
+
+  if (ctrl)
+    /* sync modes available: auto, external and internal */
+    b |= MAX7456_ENABLE_display_vert | MAX7456_SYNC_autosync;
+  else
+    b |= MAX7456_DISABLE_display;
   
   spi_transfer(MAX7456_VM0_reg, SPI_START);
-  switch(ctrl){
-    case 0:
-      b = MAX7456_DISABLE_display | video_mode;
-      break;
-    case 1:
-      /* sync modes available: auto, external and internal */
-      b = MAX7456_ENABLE_display_vert | video_mode | MAX7456_SYNC_autosync; 
-      break;
-  }
   spi_transfer(b, SPI_END);
 }
 

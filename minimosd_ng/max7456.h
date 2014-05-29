@@ -1,6 +1,7 @@
+#ifndef _MAX7456_H_
+#define _MAX7456_H_
 
-#ifndef ArduCam_Max7456_h
-#define ArduCam_Max7456_h
+#include "../FastSerial/BetterStream.h"
 
 /******* FROM DATASHEET *******/
 
